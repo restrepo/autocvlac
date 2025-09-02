@@ -4,7 +4,7 @@ Basic tests for autocvlac package.
 
 import unittest
 from autocvlac import flatten
-from autocvlac.core import filter_products_by_year
+from autocvlac.core import filter_products_by_year, authenticate_cvlac
 
 
 class TestAutocvlac(unittest.TestCase):
@@ -41,6 +41,16 @@ class TestAutocvlac(unittest.TestCase):
         result = filter_products_by_year(products, 2010)
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["year_published"], 2020)
+    
+    def test_authenticate_cvlac_function_exists(self):
+        """Test that authentication function exists and has correct signature."""
+        # Just test that the function exists and can be called
+        self.assertTrue(callable(authenticate_cvlac))
+        # Test with None values to trigger early validation
+        result = authenticate_cvlac(None, None)
+        self.assertIn("status", result)
+        self.assertIn("message", result)
+        self.assertIn("session_active", result)
 
 
 if __name__ == '__main__':

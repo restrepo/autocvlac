@@ -34,3 +34,6 @@ htmlcov/
 # Temporary files
 *.tmp
 *~
+
+# Example and demo files
+example_usage.py
