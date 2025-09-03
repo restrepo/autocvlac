@@ -1,5 +1,5 @@
 """
-autocvlac - A Python package for processing research data and CVLaC information.
+autofillcvlac - A Python package for processing research data and CVLaC information.
 """
 
 __version__ = "0.1.0"
