@@ -1,13 +1,13 @@
 """
-Basic tests for autocvlac package.
+Basic tests for autofillcvlac package.
 """
 
 import unittest
-from autocvlac import flatten
-from autocvlac.core import filter_products_by_year, authenticate_cvlac
+from autofillcvlac import flatten
+from autofillcvlac.core import filter_products_by_year, authenticate_cvlac
 
 
-class TestAutocvlac(unittest.TestCase):
+class TestAutofillcvlac(unittest.TestCase):
     
     def test_flatten(self):
         """Test the flatten function."""
