@@ -4,7 +4,7 @@ Core functionality for autocvlac package.
 
 import requests
 import pandas as pd
-from helium import start_chrome, go_to, write, click, kill_browser, Text, TextField, Button, S
+from helium import start_chrome, go_to, write, click, kill_browser, Text, TextField, Button, S, select
 
 
 def flatten(xss):
@@ -104,12 +104,14 @@ def create_products_dataframe(products):
     return df
 
 
-def authenticate_cvlac(username, password, headless=True):
+def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password, headless=True):
     """
     Authenticate with the CVLaC (Curriculum Vitae de Latinoamérica y el Caribe) system.
     
     Args:
-        username (str): The username for CVLaC login
+        nacionalidad (str): The nationality option to select from dropdown
+        nombres (str): The user's full name
+        documento_identificacion (str): The identification document number
         password (str): The password for CVLaC login
         headless (bool): Whether to run browser in headless mode (default: True)
         
@@ -120,10 +122,10 @@ def authenticate_cvlac(username, password, headless=True):
         Exception: If authentication fails or browser operations encounter errors
     """
     # Validate inputs
-    if not username or not password:
+    if not nacionalidad or not nombres or not documento_identificacion or not password:
         return {
             "status": "error",
-            "message": "Username and password are required",
+            "message": "All fields (nacionalidad, nombres, documento_identificacion, password) are required",
             "session_active": False
         }
     
@@ -139,10 +141,18 @@ def authenticate_cvlac(username, password, headless=True):
         # Navigate to login page
         go_to(login_url)
         
-        # Fill in credentials
-        # Note: These field selectors may need adjustment based on actual page structure
-        write(username, into=TextField("Usuario") or TextField("username") or TextField("user"))
-        write(password, into=TextField("Contraseña") or TextField("password") or TextField("pass"))
+        # Fill in credentials according to actual CVLaC form fields
+        # Select nationality from dropdown
+        select(nacionalidad, from_=S("select") or S("[name*='nacionalidad']") or S("[id*='nacionalidad']"))
+        
+        # Fill in name
+        write(nombres, into=TextField("Nombres") or S("[name*='nombres']") or S("[id*='nombres']"))
+        
+        # Fill in identification document
+        write(documento_identificacion, into=TextField("Documento de identificación") or S("[name*='documento']") or S("[id*='documento']"))
+        
+        # Fill in password
+        write(password, into=TextField("Contraseña") or S("[name*='password']") or S("[type='password']"))
         
         # Submit form
         click(Button("Ingresar") or Button("Login") or Button("Entrar") or S("input[type='submit']"))
