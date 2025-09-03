@@ -20,7 +20,7 @@ flat_list = flatten(nested_list)
 print(flat_list)  # [1, 2, 3, 4, 5]
 
 # Authenticate with CVLaC system
-auth_result = authenticate_cvlac('your_username', 'your_password')
+auth_result = authenticate_cvlac('Colombian', 'John Doe', '12345678', 'your_password')
 if auth_result['status'] == 'success':
     print("Authentication successful!")
 else:

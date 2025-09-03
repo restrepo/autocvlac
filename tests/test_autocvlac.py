@@ -47,10 +47,32 @@ class TestAutocvlac(unittest.TestCase):
         # Just test that the function exists and can be called
         self.assertTrue(callable(authenticate_cvlac))
         # Test with None values to trigger early validation
-        result = authenticate_cvlac(None, None)
+        result = authenticate_cvlac(None, None, None, None)
         self.assertIn("status", result)
         self.assertIn("message", result)
         self.assertIn("session_active", result)
+    
+    def test_authenticate_cvlac_validation(self):
+        """Test input validation for authentication function."""
+        # Test missing nationality
+        result = authenticate_cvlac(None, "John Doe", "12345678", "password123")
+        self.assertEqual(result["status"], "error")
+        self.assertFalse(result["session_active"])
+        
+        # Test missing names
+        result = authenticate_cvlac("Colombian", None, "12345678", "password123")
+        self.assertEqual(result["status"], "error")
+        self.assertFalse(result["session_active"])
+        
+        # Test missing document
+        result = authenticate_cvlac("Colombian", "John Doe", None, "password123")
+        self.assertEqual(result["status"], "error")
+        self.assertFalse(result["session_active"])
+        
+        # Test missing password
+        result = authenticate_cvlac("Colombian", "John Doe", "12345678", None)
+        self.assertEqual(result["status"], "error")
+        self.assertFalse(result["session_active"])
 
 
 if __name__ == '__main__':
