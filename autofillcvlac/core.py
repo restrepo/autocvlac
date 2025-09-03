@@ -104,7 +104,7 @@ def create_products_dataframe(products):
     return df
 
 
-def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password, headless=True):
+def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password, pais_nacimiento=None, headless=True):
     """
     Authenticate with the CVLaC (Curriculum Vitae de Latinoamérica y el Caribe) system.
     
@@ -113,6 +113,7 @@ def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password
         nombres (str): The user's full name
         documento_identificacion (str): The identification document number
         password (str): The password for CVLaC login
+        pais_nacimiento (str, optional): Country of birth (required when nacionalidad is "Extranjero - otra" or "E")
         headless (bool): Whether to run browser in headless mode (default: True)
         
     Returns:
@@ -129,6 +130,14 @@ def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password
             "session_active": False
         }
     
+    # Check if pais_nacimiento is required for "Extranjero - otra"
+    if nacionalidad in ["Extranjero - otra", "E"] and not pais_nacimiento:
+        return {
+            "status": "error",
+            "message": "pais_nacimiento is required when nacionalidad is 'Extranjero - otra'",
+            "session_active": False
+        }
+    
     login_url = "https://scienti.minciencias.gov.co/cvlac/Login/pre_s_login.do"
     
     try:
@@ -142,20 +151,25 @@ def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password
         go_to(login_url)
         
         # Fill in credentials according to actual CVLaC form fields
-        # Select nationality from dropdown
-        select(nacionalidad, from_=S("select") or S("[name*='nacionalidad']") or S("[id*='nacionalidad']"))
+        # Select nationality from dropdown using the exact field ID
+        select(nacionalidad, from_=S("#tpo_nacionalidad") or S("[name='tpo_nacionalidad']") or S("select"))
         
-        # Fill in name
-        write(nombres, into=TextField("Nombres") or S("[name*='nombres']") or S("[id*='nombres']"))
+        # If "Extranjero - otra" is selected, wait for and fill "País de nacimiento" field
+        if nacionalidad in ["Extranjero - otra", "E"]:
+            # Wait for the country field to become visible and fill it
+            select(pais_nacimiento, from_=S("#sgl_pais_nacim") or S("[name='sgl_pais_nacim']"))
         
-        # Fill in identification document
-        write(documento_identificacion, into=TextField("Documento de identificación") or S("[name*='documento']") or S("[id*='documento']"))
+        # Fill in name using the exact field ID
+        write(nombres, into=S("#txt_nmes_rh") or S("[name='txt_nmes_rh']") or TextField("Nombres"))
         
-        # Fill in password
-        write(password, into=TextField("Contraseña") or S("[name*='password']") or S("[type='password']"))
+        # Fill in identification document using the exact field ID
+        write(documento_identificacion, into=S("#nro_documento_ident") or S("[name='nro_documento_ident']") or TextField("Documento de identificación"))
         
-        # Submit form
-        click(Button("Ingresar") or Button("Login") or Button("Entrar") or S("input[type='submit']"))
+        # Fill in password using the exact field ID
+        write(password, into=S("#txt_contrasena") or S("[name='txt_contrasena']") or S("[type='password']"))
+        
+        # Submit form using the exact button ID
+        click(S("#botonEnviar") or Button("Ingresar") or Button("Login") or Button("Entrar") or S("input[type='submit']"))
         
         # Check for successful authentication
         # This would need to be customized based on the actual success indicators

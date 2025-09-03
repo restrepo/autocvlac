@@ -26,6 +26,13 @@ if auth_result['status'] == 'success':
 else:
     print(f"Authentication failed: {auth_result['message']}")
 
+# Authenticate with CVLaC system for foreign nationality
+auth_result = authenticate_cvlac('Extranjero - otra', 'John Doe', '12345678', 'your_password', 'Estados Unidos')
+if auth_result['status'] == 'success':
+    print("Authentication successful!")
+else:
+    print(f"Authentication failed: {auth_result['message']}")
+
 # Get research products from API
 response = get_research_products('67dc9885444bab3c3f1a7df2')
 if response.status_code == 200:
