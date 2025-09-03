@@ -32,8 +32,47 @@ jobs:
     - name: Check package
       run: twine check dist/*
       
+    - name: Install package
+      run: pip install -e .
+      
+    - name: Check if version exists on PyPI
+      id: check-version
+      run: |
+        PACKAGE_VERSION=$(python -c "import autocvlac; print(autocvlac.__version__)")
+        echo "package_version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
+        
+        # Check if version already exists on PyPI using requests
+        VERSION_EXISTS=$(python -c "
+        import requests
+        import sys
+        
+        package_version = '$PACKAGE_VERSION'
+        try:
+            response = requests.get(f'https://pypi.org/pypi/autocvlac/{package_version}/json')
+            if response.status_code == 200:
+                print('true')
+            else:
+                print('false')
+        except:
+            print('false')
+        ")
+        
+        echo "version_exists=$VERSION_EXISTS" >> $GITHUB_OUTPUT
+        
+        if [ "$VERSION_EXISTS" = "true" ]; then
+          echo "Version $PACKAGE_VERSION already exists on PyPI"
+        else
+          echo "Version $PACKAGE_VERSION does not exist on PyPI"
+        fi
+        
     - name: Publish to PyPI
+      if: steps.check-version.outputs.version_exists == 'false'
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
       run: twine upload dist/*
+      
+    - name: Skip publish (version exists)
+      if: steps.check-version.outputs.version_exists == 'true'
+      run: |
+        echo "Skipping PyPI upload - version ${{ steps.check-version.outputs.package_version }} already exists"
