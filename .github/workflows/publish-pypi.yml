@@ -38,7 +38,7 @@ jobs:
     - name: Check if version exists on PyPI
       id: check-version
       run: |
-        PACKAGE_VERSION=$(python -c "import autocvlac; print(autocvlac.__version__)")
+        PACKAGE_VERSION=$(python -c "import autofillcvlac; print(autofillcvlac.__version__)")
         echo "package_version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
         
         # Check if version already exists on PyPI using requests
@@ -48,7 +48,7 @@ jobs:
         
         package_version = '$PACKAGE_VERSION'
         try:
-            response = requests.get(f'https://pypi.org/pypi/autocvlac/{package_version}/json')
+            response = requests.get(f'https://pypi.org/pypi/autofillcvlac/{package_version}/json')
             if response.status_code == 200:
                 print('true')
             else:
