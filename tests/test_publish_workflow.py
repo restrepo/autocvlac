@@ -32,7 +32,7 @@ class TestPublishWorkflow(unittest.TestCase):
         # Simulate the workflow logic
         package_version = "0.1.0"
         try:
-            response = requests.get(f'https://pypi.org/pypi/autocvlac/{package_version}/json')
+            response = requests.get(f'https://pypi.org/pypi/autofillcvlac/{package_version}/json')
             version_exists = response.status_code == 200
         except:
             version_exists = False
@@ -50,7 +50,7 @@ class TestPublishWorkflow(unittest.TestCase):
         # Simulate the workflow logic
         package_version = "0.1.0"
         try:
-            response = requests.get(f'https://pypi.org/pypi/autocvlac/{package_version}/json')
+            response = requests.get(f'https://pypi.org/pypi/autofillcvlac/{package_version}/json')
             version_exists = response.status_code == 200
         except:
             version_exists = False
@@ -66,7 +66,7 @@ class TestPublishWorkflow(unittest.TestCase):
         # Simulate the workflow logic
         package_version = "0.1.0"
         try:
-            response = requests.get(f'https://pypi.org/pypi/autocvlac/{package_version}/json')
+            response = requests.get(f'https://pypi.org/pypi/autofillcvlac/{package_version}/json')
             version_exists = response.status_code == 200
         except:
             version_exists = False
