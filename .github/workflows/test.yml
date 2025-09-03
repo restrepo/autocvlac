@@ -29,8 +29,8 @@ jobs:
         
     - name: Run tests
       run: |
-        python -m unittest tests.test_autocvlac -v
+        python -m unittest tests.test_autofillcvlac -v
         
     - name: Test import
       run: |
-        python -c "import autocvlac; print('Version:', autocvlac.__version__)"
+        python -c "import autofillcvlac; print('Version:', autofillcvlac.__version__)"
