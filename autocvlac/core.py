@@ -1,5 +1,5 @@
 """
-Core functionality for autocvlac package.
+Core functionality for autofillcvlac package.
 """
 
 import requests
