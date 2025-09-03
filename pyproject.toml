@@ -3,13 +3,13 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "autocvlac"
+name = "autofillcvlac"
 version = "0.1.0"
 description = "A Python package for processing research data and CVLaC information"
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
-    {name = "autocvlac contributors"}
+    {name = "autofillcvlac contributors"}
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -29,9 +29,9 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/restrepo/autocvlac"
-"Bug Reports" = "https://github.com/restrepo/autocvlac/issues"
-"Source" = "https://github.com/restrepo/autocvlac"
+"Homepage" = "https://github.com/restrepo/autofillcvlac"
+"Bug Reports" = "https://github.com/restrepo/autofillcvlac/issues"
+"Source" = "https://github.com/restrepo/autofillcvlac"
 
 [tool.setuptools.packages.find]
 where = ["."]
