@@ -35,4 +35,4 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["autocvlac*"]
+include = ["autofillcvlac*"]
