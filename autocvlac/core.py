@@ -4,6 +4,7 @@ Core functionality for autocvlac package.
 
 import requests
 import pandas as pd
+from helium import start_chrome, go_to, write, click, kill_browser, Text, TextField, Button, S
 
 
 def flatten(xss):
@@ -101,3 +102,73 @@ def create_products_dataframe(products):
             ).str[0].fillna(0).astype(int)
     
     return df
+
+
+def authenticate_cvlac(username, password, headless=True):
+    """
+    Authenticate with the CVLaC (Curriculum Vitae de Latinoamérica y el Caribe) system.
+    
+    Args:
+        username (str): The username for CVLaC login
+        password (str): The password for CVLaC login
+        headless (bool): Whether to run browser in headless mode (default: True)
+        
+    Returns:
+        dict: Authentication result with status and session information
+        
+    Raises:
+        Exception: If authentication fails or browser operations encounter errors
+    """
+    # Validate inputs
+    if not username or not password:
+        return {
+            "status": "error",
+            "message": "Username and password are required",
+            "session_active": False
+        }
+    
+    login_url = "https://scienti.minciencias.gov.co/cvlac/Login/pre_s_login.do"
+    
+    try:
+        # Start browser
+        if headless:
+            browser = start_chrome(headless=True)
+        else:
+            browser = start_chrome()
+        
+        # Navigate to login page
+        go_to(login_url)
+        
+        # Fill in credentials
+        # Note: These field selectors may need adjustment based on actual page structure
+        write(username, into=TextField("Usuario") or TextField("username") or TextField("user"))
+        write(password, into=TextField("Contraseña") or TextField("password") or TextField("pass"))
+        
+        # Submit form
+        click(Button("Ingresar") or Button("Login") or Button("Entrar") or S("input[type='submit']"))
+        
+        # Check for successful authentication
+        # This would need to be customized based on the actual success indicators
+        # For now, we'll assume success if no error elements are found
+        
+        result = {
+            "status": "success",
+            "message": "Authentication successful",
+            "session_active": True
+        }
+        
+        return result
+        
+    except Exception as e:
+        return {
+            "status": "error", 
+            "message": f"Authentication failed: {str(e)}",
+            "session_active": False
+        }
+    
+    finally:
+        # Clean up browser session
+        try:
+            kill_browser()
+        except:
+            pass

@@ -11,13 +11,20 @@ pip install autocvlac
 ## Usage
 
 ```python
-from autocvlac import flatten
+from autocvlac import flatten, authenticate_cvlac
 from autocvlac.core import get_research_products, filter_products_by_year, create_products_dataframe
 
 # Flatten a list of lists
 nested_list = [[1, 2], [3, 4], [5]]
 flat_list = flatten(nested_list)
 print(flat_list)  # [1, 2, 3, 4, 5]
+
+# Authenticate with CVLaC system
+auth_result = authenticate_cvlac('your_username', 'your_password')
+if auth_result['status'] == 'success':
+    print("Authentication successful!")
+else:
+    print(f"Authentication failed: {auth_result['message']}")
 
 # Get research products from API
 response = get_research_products('67dc9885444bab3c3f1a7df2')
@@ -39,6 +46,7 @@ if response.status_code == 200:
 - Convert research data to pandas DataFrames for analysis
 - Extract citation counts from multiple sources (OpenAlex, Scholar)
 - Process author information and external IDs
+- Authenticate with CVLaC (Curriculum Vitae de Latinoamérica y el Caribe) system using web automation
 
 ## Development
 
