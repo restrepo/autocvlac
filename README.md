@@ -1,18 +1,18 @@
-# autocvlac
+# autofillcvlac
 
 A Python package for processing research data and CVLaC (Curriculum Vitae de Latinoamérica y el Caribe) information.
 
 ## Installation
 
 ```bash
-pip install autocvlac
+pip install autofillcvlac
 ```
 
 ## Usage
 
 ```python
-from autocvlac import flatten, authenticate_cvlac
-from autocvlac.core import get_research_products, filter_products_by_year, create_products_dataframe
+from autofillcvlac import flatten, authenticate_cvlac
+from autofillcvlac.core import get_research_products, filter_products_by_year, create_products_dataframe
 
 # Flatten a list of lists
 nested_list = [[1, 2], [3, 4], [5]]
