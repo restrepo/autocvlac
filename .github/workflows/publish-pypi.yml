@@ -36,13 +36,7 @@ jobs:
       run: pip install -e .
         
     - name: Publish to PyPI
-      if: steps.check-version.outputs.version_exists == 'false'
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
       run: twine upload dist/*
-      
-    - name: Skip publish (version exists)
-      if: steps.check-version.outputs.version_exists == 'true'
-      run: |
-        echo "Skipping PyPI upload - version ${{ steps.check-version.outputs.package_version }} already exists"
