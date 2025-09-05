@@ -3,6 +3,7 @@ Basic tests for autofillcvlac package.
 """
 
 import unittest
+from unittest.mock import patch, MagicMock
 from autofillcvlac import flatten
 from autofillcvlac.core import filter_products_by_year, authenticate_cvlac
 
@@ -109,6 +110,16 @@ class TestAutofillcvlac(unittest.TestCase):
         
         # Test that default value for pais_nacimiento is None
         self.assertEqual(sig.parameters['pais_nacimiento'].default, None)
+    
+    def test_authenticate_cvlac_browser_not_killed_on_validation_error(self):
+        """Test that kill_browser is not called when validation fails."""
+        with patch('autofillcvlac.core.kill_browser') as mock_kill_browser:
+            # Test validation error case - should not call any browser functions
+            result = authenticate_cvlac(None, None, None, None)
+            self.assertEqual(result["status"], "error")
+            self.assertFalse(result["session_active"])
+            # kill_browser should not be called since validation fails before browser operations
+            mock_kill_browser.assert_not_called()
 
 
 if __name__ == '__main__':

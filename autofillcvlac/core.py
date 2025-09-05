@@ -189,10 +189,3 @@ def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password
             "message": f"Authentication failed: {str(e)}",
             "session_active": False
         }
-    
-    finally:
-        # Clean up browser session
-        try:
-            kill_browser()
-        except:
-            pass
