@@ -153,6 +153,57 @@ class TestAutofillcvlac(unittest.TestCase):
         self.assertEqual(len(args), 2)
         self.assertEqual(args[1], "Colombiana")  # Value should be second parameter
 
+    @patch('autofillcvlac.core.start_chrome')
+    @patch('autofillcvlac.core.go_to')
+    @patch('autofillcvlac.core.select')
+    @patch('autofillcvlac.core.write')
+    @patch('autofillcvlac.core.click')
+    @patch('autofillcvlac.core.S')
+    @patch('autofillcvlac.core.TextField')
+    @patch('autofillcvlac.core.Button')
+    def test_authenticate_cvlac_bug_fix(self, mock_button, mock_textfield, mock_S, mock_click, mock_write, mock_select, mock_go_to, mock_start_chrome):
+        """Test the specific bug fix for 'S' object has no attribute 'tag_name' error."""
+        # Configure mocks to simulate the scenario from the bug report
+        mock_start_chrome.return_value = MagicMock()
+        mock_go_to.return_value = None
+        mock_write.return_value = None
+        mock_click.return_value = None
+        mock_S.return_value = MagicMock()
+        mock_textfield.return_value = MagicMock()
+        mock_button.return_value = MagicMock()
+        
+        # First select call should fail, second should succeed (simulating fallback logic)
+        mock_select.side_effect = [Exception("First selector failed"), None]
+        
+        # Call with the exact parameters from the bug report
+        result = authenticate_cvlac(
+            nacionalidad='Colombiana', 
+            nombres='Diego Restrepo', 
+            documento_identificacion='666', 
+            password='****', 
+            headless=False
+        )
+        
+        # Should succeed with mocked operations (no more 'S' object error)
+        self.assertEqual(result["status"], "success")
+        self.assertTrue(result["session_active"])
+        
+        # Verify select was called with proper string selectors (not S() objects)
+        self.assertTrue(mock_select.called)
+        self.assertEqual(mock_select.call_count, 2)  # First call fails, second succeeds
+        
+        # Check that select was called with string selectors, not S() objects
+        call_args_1 = mock_select.call_args_list[0]
+        call_args_2 = mock_select.call_args_list[1]
+        
+        # First call should be with "#tpo_nacionalidad"
+        self.assertEqual(call_args_1[0][0], "#tpo_nacionalidad")
+        self.assertEqual(call_args_1[0][1], "Colombiana")
+        
+        # Second call should be with "[name='tpo_nacionalidad']"
+        self.assertEqual(call_args_2[0][0], "[name='tpo_nacionalidad']")
+        self.assertEqual(call_args_2[0][1], "Colombiana")
+
 
 if __name__ == '__main__':
     unittest.main()
