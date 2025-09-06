@@ -121,6 +121,38 @@ class TestAutofillcvlac(unittest.TestCase):
             # kill_browser should not be called since validation fails before browser operations
             mock_kill_browser.assert_not_called()
 
+    @patch('autofillcvlac.core.start_chrome')
+    @patch('autofillcvlac.core.go_to')
+    @patch('autofillcvlac.core.S')
+    @patch('autofillcvlac.core.select')
+    @patch('autofillcvlac.core.write')
+    @patch('autofillcvlac.core.click')
+    def test_authenticate_cvlac_select_parameter_order(self, mock_click, mock_write, mock_select, mock_S, mock_go_to, mock_start_chrome):
+        """Test that select() is called with correct parameter order (selector first, value second)."""
+        # Configure mocks
+        mock_start_chrome.return_value = MagicMock()
+        mock_go_to.return_value = None
+        mock_S.return_value = MagicMock()
+        mock_select.return_value = None
+        mock_write.return_value = None
+        mock_click.return_value = None
+        
+        # Call with valid parameters to trigger browser operations
+        result = authenticate_cvlac("Colombiana", "John Doe", "12345678", "password123", headless=True)
+        
+        # Should succeed with mocked operations
+        self.assertEqual(result["status"], "success")
+        self.assertTrue(result["session_active"])
+        
+        # Verify select was called with correct parameter order
+        self.assertTrue(mock_select.called)
+        call_args = mock_select.call_args_list[0]
+        args, kwargs = call_args
+        
+        # First argument should be the selector (mock object), second should be the value (string)
+        self.assertEqual(len(args), 2)
+        self.assertEqual(args[1], "Colombiana")  # Value should be second parameter
+
 
 if __name__ == '__main__':
     unittest.main()
