@@ -152,21 +152,13 @@ def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password
         
         # Fill in credentials according to actual CVLaC form fields
         # Select nationality from dropdown using fallback logic
-        try:
-            select("#tpo_nacionalidad", nacionalidad)
-        except Exception:
-            try:
-                select("[name='tpo_nacionalidad']", nacionalidad)
-            except Exception:
-                select("select", nacionalidad)
+        select("select", nacionalidad)
         
         # If "Extranjero - otra" is selected, wait for and fill "País de nacimiento" field
         if nacionalidad in ["Extranjero - otra", "E"]:
             # Wait for the country field to become visible and fill it
-            try:
-                select("#sgl_pais_nacim", pais_nacimiento)
-            except Exception:
-                select("[name='sgl_pais_nacim']", pais_nacimiento)
+            wait_until(Text("País de nacimiento").exists)
+            select("País de nacimiento",pais_nacimiento)
         
         # Fill in name using the exact field ID
         write(nombres, into=S("#txt_nmes_rh") or S("[name='txt_nmes_rh']") or TextField("Nombres"))
