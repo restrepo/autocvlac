@@ -27,7 +27,8 @@ else:
     print(f"Authentication failed: {auth_result['message']}")
 
 # Authenticate with CVLaC system for foreign nationality
-auth_result = authenticate_cvlac('Extranjero - otra', 'John Doe', '12345678', 'your_password', 'Estados Unidos')
+auth_result = authenticate_cvlac('Extranjero - otra', 'John Doe', 'dummy', 'your_password', 
+                                pais_nacimiento='Estados Unidos', fecha_nacimiento='1990-05-15')
 if auth_result['status'] == 'success':
     print("Authentication successful!")
 else:

@@ -104,16 +104,17 @@ def create_products_dataframe(products):
     return df
 
 
-def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password, pais_nacimiento=None, headless=True):
+def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password, pais_nacimiento=None, fecha_nacimiento=None, headless=True):
     """
     Authenticate with the CVLaC (Curriculum Vitae de Latinoamérica y el Caribe) system.
     
     Args:
         nacionalidad (str): The nationality option to select from dropdown
         nombres (str): The user's full name
-        documento_identificacion (str): The identification document number
+        documento_identificacion (str): The identification document number (not used when nacionalidad is "Extranjero - otra")
         password (str): The password for CVLaC login
         pais_nacimiento (str, optional): Country of birth (required when nacionalidad is "Extranjero - otra" or "E")
+        fecha_nacimiento (str, optional): Date of birth in format YYYY-MM-DD (required when nacionalidad is "Extranjero - otra" or "E")
         headless (bool): Whether to run browser in headless mode (default: True)
         
     Returns:
@@ -123,20 +124,35 @@ def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password
         Exception: If authentication fails or browser operations encounter errors
     """
     # Validate inputs
-    if not nacionalidad or not nombres or not documento_identificacion or not password:
+    if not nacionalidad or not nombres or not password:
         return {
             "status": "error",
-            "message": "All fields (nacionalidad, nombres, documento_identificacion, password) are required",
+            "message": "Required fields (nacionalidad, nombres, password) are missing",
             "session_active": False
         }
     
-    # Check if pais_nacimiento is required for "Extranjero - otra"
-    if nacionalidad in ["Extranjero - otra", "E"] and not pais_nacimiento:
-        return {
-            "status": "error",
-            "message": "pais_nacimiento is required when nacionalidad is 'Extranjero - otra'",
-            "session_active": False
-        }
+    # Check if pais_nacimiento and fecha_nacimiento are required for "Extranjero - otra"
+    if nacionalidad in ["Extranjero - otra", "E"]:
+        if not pais_nacimiento:
+            return {
+                "status": "error",
+                "message": "pais_nacimiento is required when nacionalidad is 'Extranjero - otra'",
+                "session_active": False
+            }
+        if not fecha_nacimiento:
+            return {
+                "status": "error", 
+                "message": "fecha_nacimiento is required when nacionalidad is 'Extranjero - otra'",
+                "session_active": False
+            }
+    else:
+        # For non-Extranjero nationalities, documento_identificacion is required
+        if not documento_identificacion:
+            return {
+                "status": "error",
+                "message": "documento_identificacion is required for this nationality",
+                "session_active": False
+            }
     
     login_url = "https://scienti.minciencias.gov.co/cvlac/Login/pre_s_login.do"
     
@@ -163,8 +179,13 @@ def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password
         # Fill in name using the exact field ID
         write(nombres, into=S("#txt_nmes_rh") or S("[name='txt_nmes_rh']") or TextField("Nombres"))
         
-        # Fill in identification document using the exact field ID
-        write(documento_identificacion, into=S("#nro_documento_ident") or S("[name='nro_documento_ident']") or TextField("Documento de identificación"))
+        # Fill identification field based on nationality
+        if nacionalidad in ["Extranjero - otra", "E"]:
+            # For foreign nationality, fill date of birth instead of document ID
+            write(fecha_nacimiento, into=S("#dta_nacimString") or S("[name='dta_nacimString']") or TextField("Fecha de nacimiento"))
+        else:
+            # Fill in identification document using the exact field ID
+            write(documento_identificacion, into=S("#nro_documento_ident") or S("[name='nro_documento_ident']") or TextField("Documento de identificación"))
         
         # Fill in password using the exact field ID
         write(password, into=S("#txt_contrasena") or S("[name='txt_contrasena']") or S("[type='password']"))

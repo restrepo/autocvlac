@@ -86,6 +86,24 @@ class TestAutofillcvlac(unittest.TestCase):
         self.assertEqual(result["status"], "error")
         self.assertIn("pais_nacimiento is required", result["message"])
         self.assertFalse(result["session_active"])
+        
+        # Test missing fecha_nacimiento when nationality is "Extranjero - otra"
+        result = authenticate_cvlac("Extranjero - otra", "John Doe", "12345678", "password123", pais_nacimiento="Estados Unidos")
+        self.assertEqual(result["status"], "error")
+        self.assertIn("fecha_nacimiento is required", result["message"])
+        self.assertFalse(result["session_active"])
+        
+        # Test missing fecha_nacimiento when nationality is "E" (code for Extranjero - otra)
+        result = authenticate_cvlac("E", "John Doe", "12345678", "password123", pais_nacimiento="Estados Unidos")
+        self.assertEqual(result["status"], "error")
+        self.assertIn("fecha_nacimiento is required", result["message"])
+        self.assertFalse(result["session_active"])
+        
+        # Test missing documento_identificacion for non-Extranjero nationality
+        result = authenticate_cvlac("Colombiana", "John Doe", None, "password123")
+        self.assertEqual(result["status"], "error")
+        self.assertIn("documento_identificacion is required", result["message"])
+        self.assertFalse(result["session_active"])
     
     def test_authenticate_cvlac_extranjero_validation(self):
         """Test validation for Extranjero - otra nationality."""
@@ -102,14 +120,16 @@ class TestAutofillcvlac(unittest.TestCase):
         # Import and test directly at the validation level
         from autofillcvlac.core import authenticate_cvlac
         
-        # Test that function signature accepts pais_nacimiento parameter
+        # Test that function signature accepts pais_nacimiento and fecha_nacimiento parameters
         import inspect
         sig = inspect.signature(authenticate_cvlac)
         param_names = list(sig.parameters.keys())
         self.assertIn('pais_nacimiento', param_names)
+        self.assertIn('fecha_nacimiento', param_names)
         
-        # Test that default value for pais_nacimiento is None
+        # Test that default values are None
         self.assertEqual(sig.parameters['pais_nacimiento'].default, None)
+        self.assertEqual(sig.parameters['fecha_nacimiento'].default, None)
     
     def test_authenticate_cvlac_browser_not_killed_on_validation_error(self):
         """Test that kill_browser is not called when validation fails."""
@@ -198,6 +218,55 @@ class TestAutofillcvlac(unittest.TestCase):
         # Should be called with "Nacionalidad" and the nationality value
         self.assertEqual(call_args[0][0], "Nacionalidad")
         self.assertEqual(call_args[0][1], "Colombiana")
+
+    @patch('autofillcvlac.core.start_chrome')
+    @patch('autofillcvlac.core.go_to')
+    @patch('autofillcvlac.core.select')
+    @patch('autofillcvlac.core.write')
+    @patch('autofillcvlac.core.click')
+    @patch('autofillcvlac.core.S')
+    @patch('autofillcvlac.core.TextField')
+    @patch('autofillcvlac.core.Button')
+    @patch('autofillcvlac.core.wait_until')
+    @patch('autofillcvlac.core.Text')
+    def test_authenticate_cvlac_extranjero_fecha_nacimiento(self, mock_text, mock_wait_until, mock_button, mock_textfield, mock_S, mock_click, mock_write, mock_select, mock_go_to, mock_start_chrome):
+        """Test that fecha_nacimiento field is used for Extranjero - otra nationality."""
+        # Configure mocks
+        mock_start_chrome.return_value = MagicMock()
+        mock_go_to.return_value = None
+        mock_write.return_value = None
+        mock_click.return_value = None
+        mock_S.return_value = MagicMock()
+        mock_textfield.return_value = MagicMock()
+        mock_button.return_value = MagicMock()
+        mock_select.return_value = None
+        mock_wait_until.return_value = None
+        mock_text.return_value = MagicMock(exists=True)
+        
+        # Call with Extranjero nationality and fecha_nacimiento
+        result = authenticate_cvlac(
+            nacionalidad='Extranjero - otra', 
+            nombres='John Doe', 
+            documento_identificacion='dummy',  # Not used for Extranjero but pass something to avoid confusion
+            password='****', 
+            pais_nacimiento='Estados Unidos',
+            fecha_nacimiento='1990-05-15',
+            headless=True
+        )
+        
+        # Should succeed with mocked operations
+        self.assertEqual(result["status"], "success")
+        self.assertTrue(result["session_active"])
+        
+        # Verify write was called for fecha_nacimiento
+        write_calls = mock_write.call_args_list
+        fecha_call_found = False
+        for call in write_calls:
+            args, kwargs = call
+            if args[0] == '1990-05-15':  # fecha_nacimiento value
+                fecha_call_found = True
+                break
+        self.assertTrue(fecha_call_found, "fecha_nacimiento should be written to the form")
 
 
 if __name__ == '__main__':
