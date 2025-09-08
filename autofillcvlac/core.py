@@ -152,7 +152,7 @@ def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password
         
         # Fill in credentials according to actual CVLaC form fields
         # Select nationality from dropdown using fallback logic
-        select("select", nacionalidad)
+        select("Nacionalida", nacionalidad)
         
         # If "Extranjero - otra" is selected, wait for and fill "País de nacimiento" field
         if nacionalidad in ["Extranjero - otra", "E"]:
