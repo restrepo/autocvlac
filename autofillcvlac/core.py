@@ -4,7 +4,7 @@ Core functionality for autofillcvlac package.
 
 import requests
 import pandas as pd
-from helium import start_chrome, go_to, write, click, kill_browser, Text, TextField, Button, S, select
+from helium import start_chrome, go_to, write, click, kill_browser, Text, TextField, Button, S, select, wait_until
 
 
 def flatten(xss):
@@ -152,7 +152,10 @@ def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password
         
         # Fill in credentials according to actual CVLaC form fields
         # Select nationality from dropdown using fallback logic
-        select("Nacionalida", nacionalidad)
+        try:
+            select("#tpo_nacionalidad", nacionalidad)
+        except Exception:
+            select("[name='tpo_nacionalidad']", nacionalidad)
         
         # If "Extranjero - otra" is selected, wait for and fill "País de nacimiento" field
         if nacionalidad in ["Extranjero - otra", "E"]:
