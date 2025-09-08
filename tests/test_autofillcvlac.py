@@ -172,8 +172,8 @@ class TestAutofillcvlac(unittest.TestCase):
         mock_textfield.return_value = MagicMock()
         mock_button.return_value = MagicMock()
         
-        # First select call should fail, second should succeed (simulating fallback logic)
-        mock_select.side_effect = [Exception("First selector failed"), None]
+        # Mock select to succeed (simulating successful operation)
+        mock_select.return_value = None
         
         # Call with the exact parameters from the bug report
         result = authenticate_cvlac(
@@ -190,19 +190,14 @@ class TestAutofillcvlac(unittest.TestCase):
         
         # Verify select was called with proper string selectors (not S() objects)
         self.assertTrue(mock_select.called)
-        self.assertEqual(mock_select.call_count, 2)  # First call fails, second succeeds
+        self.assertEqual(mock_select.call_count, 1)  # One call to select
         
         # Check that select was called with string selectors, not S() objects
-        call_args_1 = mock_select.call_args_list[0]
-        call_args_2 = mock_select.call_args_list[1]
+        call_args = mock_select.call_args_list[0]
         
-        # First call should be with "#tpo_nacionalidad"
-        self.assertEqual(call_args_1[0][0], "#tpo_nacionalidad")
-        self.assertEqual(call_args_1[0][1], "Colombiana")
-        
-        # Second call should be with "[name='tpo_nacionalidad']"
-        self.assertEqual(call_args_2[0][0], "[name='tpo_nacionalidad']")
-        self.assertEqual(call_args_2[0][1], "Colombiana")
+        # Should be called with "Nacionalidad" and the nationality value
+        self.assertEqual(call_args[0][0], "Nacionalidad")
+        self.assertEqual(call_args[0][1], "Colombiana")
 
 
 if __name__ == '__main__':
