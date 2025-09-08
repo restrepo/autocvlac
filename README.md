@@ -1,6 +1,6 @@
 # autofillcvlac
 
-A Python package for processing research data and CVLaC (Curriculum Vitae de Latinoamérica y el Caribe) information.
+A Python package for processing research data and automatically fill the CVLaC (Curriculum Vitae de Latinoamérica y el Caribe) information.
 
 ## Installation
 
