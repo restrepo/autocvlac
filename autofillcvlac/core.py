@@ -4,7 +4,9 @@ Core functionality for autofillcvlac package.
 
 import requests
 import pandas as pd
-from helium import start_chrome, go_to, write, click, kill_browser, Text, TextField, Button, S, select, wait_until
+from datetime import datetime
+from selenium.webdriver.common.by import By
+from helium import start_chrome, go_to, write, click, kill_browser, Text, TextField, Button, S, select, wait_until, get_driver
 
 
 def flatten(xss):
@@ -104,6 +106,38 @@ def create_products_dataframe(products):
     return df
 
 
+def fill_date_of_birth(fecha_nacimiento):
+    """
+    Fill the 'Fecha de nacimiento' field in the CvLAC form whem 'Nacionalidad' is 'Extranjero - otra' 
+    
+    Args:
+        fecha_nacimiento (str): Date of birth in format YYYY-MM-DD (required when nacionalidad is "Extranjero - otra" or "E")
+    """    
+    try:
+        driver = get_driver()
+        click(S(".ui-datepicker-trigger"))
+        dt = datetime.strptime(fecha_nacimiento, '%Y-%m-%d').date()
+        datepicker = driver.find_element(By.CLASS_NAME,'ui-datepicker-month')
+        months = datepicker.find_elements(By.TAG_NAME,'option')
+        B = [''] + [m.text for m in months]
+        month = [k for k in months  if k.text == B[dt.month]][0]
+        month.click()
+        datepicker = driver.find_element(By.CLASS_NAME,'ui-datepicker-year')
+        year = [k for k in datepicker.find_elements(By.TAG_NAME,'option') if k.text == str(dt.year)][0]
+        year.click()
+        month_days = driver.find_element(By.ID,'ui-datepicker-div')
+        day = [d for d in month_days.find_elements(By.CLASS_NAME,"ui-state-default") 
+                  if d.text == str(dt.day)][0]
+        day.click()
+    
+    except Exception as e:
+            return {
+                "status": "error", 
+                "message": f"Authentication failed: {str(e)}",
+                "session_active": False
+            }
+
+
 def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password, pais_nacimiento=None, fecha_nacimiento=None, headless=True):
     """
     Authenticate with the CVLaC (Curriculum Vitae de Latinoamérica y el Caribe) system.
@@ -182,7 +216,7 @@ def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password
         # Fill identification field based on nationality
         if nacionalidad in ["Extranjero - otra", "E"]:
             # For foreign nationality, fill date of birth instead of document ID
-            write(fecha_nacimiento, into=S("#dta_nacimString") or S("[name='dta_nacimString']") or TextField("Fecha de nacimiento"))
+            fill_date_of_birth(fecha_nacimiento)
         else:
             # Fill in identification document using the exact field ID
             write(documento_identificacion, into=S("#nro_documento_ident") or S("[name='nro_documento_ident']") or TextField("Documento de identificación"))
