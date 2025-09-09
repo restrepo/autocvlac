@@ -5,7 +5,7 @@ Basic tests for autofillcvlac package.
 import unittest
 from unittest.mock import patch, MagicMock
 from autofillcvlac import flatten
-from autofillcvlac.core import filter_products_by_year, authenticate_cvlac
+from autofillcvlac.core import filter_products_by_year, authenticate_cvlac, fill_scientific_article
 
 
 class TestAutofillcvlac(unittest.TestCase):
@@ -411,6 +411,97 @@ class TestAutofillcvlac(unittest.TestCase):
         self.assertEqual(result["status"], "error")
         self.assertFalse(result["session_active"])
         self.assertIn("Authentication failed: Wrong credentials detected", result["message"])
+
+    def test_fill_scientific_article_function_exists(self):
+        """Test that fill_scientific_article function exists and has correct signature."""
+        # Just test that the function exists and can be called
+        self.assertTrue(callable(fill_scientific_article))
+        # Test with None title to trigger early validation
+        result = fill_scientific_article(None)
+        self.assertIn("status", result)
+        self.assertIn("message", result)
+        self.assertIn("session_active", result)
+
+    def test_fill_scientific_article_validation(self):
+        """Test input validation for fill_scientific_article function."""
+        # Test missing title
+        result = fill_scientific_article(None)
+        self.assertEqual(result["status"], "error")
+        self.assertIn("title is required", result["message"])
+        self.assertTrue(result["session_active"])
+        
+        # Test invalid article type
+        result = fill_scientific_article("Test Title", article_type="999")
+        self.assertEqual(result["status"], "error")
+        self.assertIn("article_type must be one of", result["message"])
+        self.assertTrue(result["session_active"])
+        
+        # Test invalid publication medium
+        result = fill_scientific_article("Test Title", publication_medium="X")
+        self.assertEqual(result["status"], "error")
+        self.assertIn("publication_medium must be one of", result["message"])
+        self.assertTrue(result["session_active"])
+        
+        # Test invalid month
+        result = fill_scientific_article("Test Title", month=13)
+        self.assertEqual(result["status"], "error")
+        self.assertIn("month must be between 1 and 12", result["message"])
+        self.assertTrue(result["session_active"])
+
+    @patch('autofillcvlac.core.go_to')
+    @patch('autofillcvlac.core.click')
+    @patch('autofillcvlac.core.write')
+    @patch('autofillcvlac.core.select')
+    @patch('autofillcvlac.core.S')
+    @patch('time.sleep')
+    def test_fill_scientific_article_success(self, mock_sleep, mock_S, mock_select, mock_write, mock_click, mock_go_to):
+        """Test successful scientific article form filling."""
+        # Configure mocks
+        mock_go_to.return_value = None
+        mock_click.return_value = None
+        mock_write.return_value = None
+        mock_select.return_value = None
+        mock_S.return_value = MagicMock()
+        mock_sleep.return_value = None
+        
+        # Call with valid parameters
+        result = fill_scientific_article(
+            title="Test Article Title",
+            article_type="111",
+            initial_page="1",
+            final_page="10",
+            language="EN",
+            year=2023,
+            month=6,
+            volume="10",
+            issue="2",
+            website_url="https://example.com",
+            doi="10.1234/example"
+        )
+        
+        # Should succeed with mocked operations
+        self.assertEqual(result["status"], "success")
+        self.assertTrue(result["session_active"])
+        self.assertIn("Scientific article form filled successfully", result["message"])
+        
+        # Verify key functions were called
+        mock_go_to.assert_called_once_with("https://scienti.minciencias.gov.co/cvlac/EnProdArticulo/create.do")
+        self.assertTrue(mock_write.called)
+        self.assertTrue(mock_select.called)
+        self.assertTrue(mock_click.called)
+
+    @patch('autofillcvlac.core.go_to')
+    def test_fill_scientific_article_exception_handling(self, mock_go_to):
+        """Test exception handling in fill_scientific_article."""
+        # Mock an exception during navigation
+        mock_go_to.side_effect = Exception("Navigation failed")
+        
+        result = fill_scientific_article("Test Title")
+        
+        # Should return error status
+        self.assertEqual(result["status"], "error")
+        self.assertTrue(result["session_active"])
+        self.assertIn("Failed to fill scientific article form", result["message"])
 
 
 if __name__ == '__main__':

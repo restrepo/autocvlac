@@ -300,3 +300,160 @@ def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password
             "message": f"Authentication failed: {str(e)}",
             "session_active": False
         }
+
+
+def fill_scientific_article(
+    title,
+    article_type="111",  # Default to "Completo" 
+    initial_page=None,
+    final_page=None,
+    language="ES",  # Default to Spanish
+    year=None,
+    month=1,  # Default to January
+    journal_name=None,
+    volume=None,
+    issue=None,
+    series=None,
+    publication_medium="I",  # Default to "Papel"
+    website_url=None,
+    doi=None
+):
+    """
+    Fill the scientific article form in CVLaC after successful authentication.
+    
+    Args:
+        title (str): The article title (required)
+        article_type (str): Article type - "111" (Completo), "112" (Corto), "113" (Revisión), "114" (Caso Clínico). Default: "111"
+        initial_page (str, optional): Initial page number
+        final_page (str, optional): Final page number  
+        language (str): Language code (default: "ES" for Spanish)
+        year (int, optional): Publication year
+        month (int): Publication month (1-12, default: 1)
+        journal_name (str, optional): Journal name (note: actual journal selection requires manual search)
+        volume (str, optional): Journal volume
+        issue (str, optional): Journal issue/fascicle
+        series (str, optional): Journal series
+        publication_medium (str): Publication medium - "I" (Papel) or "H" (Electrónico). Default: "I"
+        website_url (str, optional): Website URL
+        doi (str, optional): DOI (Digital Object Identifier)
+        
+    Returns:
+        dict: Status dictionary with 'status', 'message', and 'session_active' keys
+    """
+    # Validate required parameters
+    if not title:
+        return {
+            "status": "error",
+            "message": "title is required",
+            "session_active": True
+        }
+    
+    # Validate article_type
+    valid_article_types = ["111", "112", "113", "114"]
+    if article_type not in valid_article_types:
+        return {
+            "status": "error", 
+            "message": f"article_type must be one of {valid_article_types}",
+            "session_active": True
+        }
+    
+    # Validate publication_medium
+    valid_mediums = ["I", "H"]
+    if publication_medium not in valid_mediums:
+        return {
+            "status": "error",
+            "message": f"publication_medium must be one of {valid_mediums} (I=Papel, H=Electrónico)",
+            "session_active": True
+        }
+    
+    # Validate month
+    if month < 1 or month > 12:
+        return {
+            "status": "error",
+            "message": "month must be between 1 and 12",
+            "session_active": True
+        }
+    
+    try:
+        # Navigate to the article creation page
+        article_url = "https://scienti.minciencias.gov.co/cvlac/EnProdArticulo/create.do"
+        go_to(article_url)
+        
+        # Wait for page to load
+        import time
+        time.sleep(2)
+        
+        # Fill article type (radio button)
+        if article_type == "111":
+            click(S("#tipoProducto1") or S("input[value='111']"))
+        elif article_type == "112":
+            click(S("#tipoProducto2") or S("input[value='112']"))
+        elif article_type == "113":
+            click(S("#tipoProducto3") or S("input[value='113']"))
+        elif article_type == "114":
+            click(S("#tipoProducto4") or S("input[value='114']"))
+        
+        # Fill article title
+        write(title, into=S("#txt_nme_prod") or S("[name='txt_nme_prod']"))
+        
+        # Fill page numbers if provided
+        if initial_page:
+            write(str(initial_page), into=S("[name='txt_pagina_inicial']"))
+        
+        if final_page:
+            write(str(final_page), into=S("[name='txt_pagina_final']"))
+        
+        # Select language
+        select(S("[name='sgl_idioma']"), language)
+        
+        # Select year if provided
+        if year:
+            select(S("[name='nro_ano_presenta']"), str(year))
+        
+        # Select month
+        select(S("[name='nro_mes_presenta']"), str(month))
+        
+        # Fill journal name if provided (note: this is a readonly field that normally requires search)
+        # We'll just try to fill it directly, but user may need to use the search functionality
+        if journal_name:
+            try:
+                write(journal_name, into=S("#txt_nme_revista") or S("[name='txt_nme_revista']"))
+            except:
+                # If readonly field can't be filled, continue (user will need to use search)
+                pass
+        
+        # Fill volume if provided
+        if volume:
+            write(str(volume), into=S("[name='txt_volumen_revista']"))
+        
+        # Fill issue/fascicle if provided
+        if issue:
+            write(str(issue), into=S("#txt_fasciculo_revista") or S("[name='txt_fasciculo_revista']"))
+        
+        # Fill series if provided
+        if series:
+            write(str(series), into=S("[name='txt_serie_revista']"))
+        
+        # Select publication medium
+        select(S("[name='tpo_medio_divulgacion']"), publication_medium)
+        
+        # Fill website URL if provided
+        if website_url:
+            write(website_url, into=S("#url") or S("[name='txt_web_producto']"))
+        
+        # Fill DOI if provided
+        if doi:
+            write(doi, into=S("#doi") or S("[name='txt_doi']"))
+        
+        return {
+            "status": "success",
+            "message": "Scientific article form filled successfully. Note: Journal selection may require manual search using the 'Buscar' button.",
+            "session_active": True
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Failed to fill scientific article form: {str(e)}",
+            "session_active": True
+        }
