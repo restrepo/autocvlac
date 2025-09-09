@@ -341,7 +341,7 @@ def fill_scientific_article(
     final_page=None,
     language="ES",  # Default to Spanish
     year=None,
-    month=1,  # Default to January
+    month=None,  # Default to January
     journal_name=None,
     journal_issn=None,
     volume=None,
@@ -361,7 +361,7 @@ def fill_scientific_article(
         final_page (str, optional): Final page number  
         language (str): Language code (default: "ES" for Spanish)
         year (int, optional): Publication year
-        month (int): Publication month (1-12, default: 1)
+        month (str): Publication month in Spanish (Enero a Diciembre, default: None)
         journal_name (str, optional): Journal name (note: actual journal selection requires manual search)
         journal_issn (str, optional): Journal issn
         volume (str, optional): Journal volume
@@ -401,10 +401,11 @@ def fill_scientific_article(
         }
     
     # Validate month
-    if month < 1 or month > 12:
+    if month in ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo','Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']:
         return {
             "status": "error",
-            "message": "month must be between 1 and 12",
+            "message": "month must be in Spanish starting with capital letter, e.g 'Enero'",
             "session_active": True
         }
     
