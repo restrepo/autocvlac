@@ -229,7 +229,8 @@ class TestAutofillcvlac(unittest.TestCase):
     @patch('autofillcvlac.core.Button')
     @patch('autofillcvlac.core.wait_until')
     @patch('autofillcvlac.core.Text')
-    def test_authenticate_cvlac_extranjero_fecha_nacimiento(self, mock_text, mock_wait_until, mock_button, mock_textfield, mock_S, mock_click, mock_write, mock_select, mock_go_to, mock_start_chrome):
+    @patch('autofillcvlac.core.fill_date_of_birth')
+    def test_authenticate_cvlac_extranjero_fecha_nacimiento(self, mock_fill_date_of_birth, mock_text, mock_wait_until, mock_button, mock_textfield, mock_S, mock_click, mock_write, mock_select, mock_go_to, mock_start_chrome):
         """Test that fecha_nacimiento field is used for Extranjero - otra nationality."""
         # Configure mocks
         mock_start_chrome.return_value = MagicMock()
@@ -242,6 +243,7 @@ class TestAutofillcvlac(unittest.TestCase):
         mock_select.return_value = None
         mock_wait_until.return_value = None
         mock_text.return_value = MagicMock(exists=True)
+        mock_fill_date_of_birth.return_value = None
         
         # Call with Extranjero nationality and fecha_nacimiento
         result = authenticate_cvlac(
@@ -258,15 +260,34 @@ class TestAutofillcvlac(unittest.TestCase):
         self.assertEqual(result["status"], "success")
         self.assertTrue(result["session_active"])
         
-        # Verify write was called for fecha_nacimiento
-        write_calls = mock_write.call_args_list
-        fecha_call_found = False
-        for call in write_calls:
-            args, kwargs = call
-            if args[0] == '1990-05-15':  # fecha_nacimiento value
-                fecha_call_found = True
-                break
-        self.assertTrue(fecha_call_found, "fecha_nacimiento should be written to the form")
+        # Verify fill_date_of_birth was called with fecha_nacimiento
+        mock_fill_date_of_birth.assert_called_once_with('1990-05-15')
+
+    def test_fill_date_of_birth_function(self):
+        """Test the fill_date_of_birth function exists and handles basic scenarios."""
+        from autofillcvlac.core import fill_date_of_birth
+        
+        # Test function existence
+        self.assertTrue(callable(fill_date_of_birth))
+        
+        # Test with invalid date format should return error
+        result = fill_date_of_birth('invalid-date')
+        self.assertIsInstance(result, dict)
+        self.assertEqual(result['status'], 'error')
+        self.assertFalse(result['session_active'])
+
+    def test_fill_date_of_birth_invalid_date_format(self):
+        """Test fill_date_of_birth with invalid date format."""
+        from autofillcvlac.core import fill_date_of_birth
+        
+        # Test with invalid date format
+        result = fill_date_of_birth('invalid-date')
+        
+        # Should return error result
+        self.assertIsInstance(result, dict)
+        self.assertEqual(result['status'], 'error')
+        self.assertIn('Authentication failed', result['message'])
+        self.assertFalse(result['session_active'])
 
 
 if __name__ == '__main__':
