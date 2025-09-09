@@ -355,7 +355,7 @@ def fill_scientific_article(
     volume=None,
     issue=None,
     series=None,
-    publication_medium="I",  # Default to "Papel"
+    publication_medium="H",  # Default to "Electrónico"
     website_url=None,
     doi=None
 ):
@@ -375,7 +375,7 @@ def fill_scientific_article(
         volume (str, optional): Journal volume
         issue (str, optional): Journal issue/fascicle
         series (str, optional): Journal series
-        publication_medium (str): Publication medium - "I" (Papel) or "H" (Electrónico). Default: "I"
+        publication_medium (str): Publication medium - "I" (Papel) or "H" (Electrónico). Default: "H"
         website_url (str, optional): Website URL
         doi (str, optional): DOI (Digital Object Identifier)
         
