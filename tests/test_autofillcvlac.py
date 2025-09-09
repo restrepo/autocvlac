@@ -443,10 +443,15 @@ class TestAutofillcvlac(unittest.TestCase):
         self.assertTrue(result["session_active"])
         
         # Test invalid month
-        result = fill_scientific_article("Test Title", month=13)
+        result = fill_scientific_article("Test Title", month="InvalidMonth")
         self.assertEqual(result["status"], "error")
-        self.assertIn("month must be between 1 and 12", result["message"])
+        self.assertIn("month must be in Spanish starting with capital letter", result["message"])
         self.assertTrue(result["session_active"])
+        
+        # Test valid Spanish month
+        result = fill_scientific_article("Test Title", month="Enero")
+        # Should not fail on month validation (will fail later on browser requirement)
+        self.assertNotIn("month must be in Spanish", result.get("message", ""))
 
     @patch('autofillcvlac.core.get_driver')
     @patch('autofillcvlac.core.wait_until')
@@ -484,7 +489,7 @@ class TestAutofillcvlac(unittest.TestCase):
             final_page="10",
             language="EN",
             year=2023,
-            month=6,
+            month="Junio",
             volume="10",
             issue="2",
             website_url="https://example.com",

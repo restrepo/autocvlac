@@ -401,7 +401,7 @@ def fill_scientific_article(
         }
     
     # Validate month
-    if month in ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo','Junio',
+    if month is not None and month not in ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo','Junio',
         'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']:
         return {
             "status": "error",
