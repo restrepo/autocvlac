@@ -459,6 +459,7 @@ def fill_scientific_article(
         if journal_issn:
             get_journal(journal_issn)
 
+        wait_until(Text('Buscar').exists)
         # Fill volume if provided
         if volume:
             write(str(volume), into=S("[name='txt_volumen_revista']"))
