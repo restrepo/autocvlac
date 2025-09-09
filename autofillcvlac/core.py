@@ -327,7 +327,9 @@ def get_publication_medium(publication_medium):
         driver = get_driver()
         pe = driver.find_element(By.NAME, 'tpo_medio_divulgacion')
         peb = pe.find_elements(By.TAG_NAME,'option')
-        pm = [p for p in peb if p.text == publication_medium][0]
+        # Map codes to text values
+        medium_text = "Papel" if publication_medium == "I" else "Electrónico"
+        pm = [p for p in peb if p.text == medium_text][0]
         pm.click()
     except:
         pass
@@ -345,7 +347,7 @@ def fill_scientific_article(
     volume=None,
     issue=None,
     series=None,
-    publication_medium="Electrónico",
+    publication_medium="I",  # Default to "Papel"
     website_url=None,
     doi=None
 ):
@@ -365,7 +367,7 @@ def fill_scientific_article(
         volume (str, optional): Journal volume
         issue (str, optional): Journal issue/fascicle
         series (str, optional): Journal series
-        publication_medium (str): Publication medium : 'Papel' or 'Electrónico'. Default: 'Electrónico'
+        publication_medium (str): Publication medium - "I" (Papel) or "H" (Electrónico). Default: "I"
         website_url (str, optional): Website URL
         doi (str, optional): DOI (Digital Object Identifier)
         
@@ -469,7 +471,7 @@ def fill_scientific_article(
             write(str(series), into=S("[name='txt_serie_revista']"))
         
         # Select publication medium
-        if publication medium:
+        if publication_medium:
             get_publication_medium(publication_medium)
         
         # Fill website URL if provided
