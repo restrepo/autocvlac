@@ -301,6 +301,38 @@ def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password
             "session_active": False
         }
 
+def get_journal(journal_issn):
+    driver = get_driver()
+    try:
+        click('Buscar')
+        write(journal_issn,into='Código ISSN')
+        click('Buscar')
+        Text('Vincular').exists()
+        wait_until(Text('Vincular').exists)
+        driver.find_element(By.TAG_NAME, 'a').click()
+        popup = driver.find_element(By.ID, 'bodyPrincipal')
+        journal = popup.find_element(By.TAG_NAME, 'option')
+        journal.click()
+        click('Vincular')
+    except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Failed to fill scientific article form: {str(e)}",
+                "session_active": True
+            }
+
+def get_publication_medium(publication_medium):
+    wait_until(Text('Buscar').exists)
+    try:
+        driver = get_driver()
+        pe = driver.find_element(By.NAME, 'tpo_medio_divulgacion')
+        peb = pe.find_elements(By.TAG_NAME,'option')
+        # Map codes to text values
+        medium_text = "Papel" if publication_medium == "I" else "Electrónico"
+        pm = [p for p in peb if p.text == medium_text][0]
+        pm.click()
+    except:
+        pass
 
 def fill_scientific_article(
     title,
@@ -311,6 +343,7 @@ def fill_scientific_article(
     year=None,
     month=1,  # Default to January
     journal_name=None,
+    journal_issn=None,
     volume=None,
     issue=None,
     series=None,
@@ -330,6 +363,7 @@ def fill_scientific_article(
         year (int, optional): Publication year
         month (int): Publication month (1-12, default: 1)
         journal_name (str, optional): Journal name (note: actual journal selection requires manual search)
+        journal_issn (str, optional): Journal issn
         volume (str, optional): Journal volume
         issue (str, optional): Journal issue/fascicle
         series (str, optional): Journal series
@@ -421,7 +455,9 @@ def fill_scientific_article(
             except:
                 # If readonly field can't be filled, continue (user will need to use search)
                 pass
-        
+        if journal_issn:
+            get_journal(journal_issn)
+
         # Fill volume if provided
         if volume:
             write(str(volume), into=S("[name='txt_volumen_revista']"))
@@ -435,7 +471,8 @@ def fill_scientific_article(
             write(str(series), into=S("[name='txt_serie_revista']"))
         
         # Select publication medium
-        select(S("[name='tpo_medio_divulgacion']"), publication_medium)
+        if publication_medium:
+            get_publication_medium(publication_medium)
         
         # Fill website URL if provided
         if website_url:

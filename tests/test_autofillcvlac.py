@@ -448,13 +448,16 @@ class TestAutofillcvlac(unittest.TestCase):
         self.assertIn("month must be between 1 and 12", result["message"])
         self.assertTrue(result["session_active"])
 
+    @patch('autofillcvlac.core.get_driver')
+    @patch('autofillcvlac.core.wait_until')
+    @patch('autofillcvlac.core.Text')
     @patch('autofillcvlac.core.go_to')
     @patch('autofillcvlac.core.click')
     @patch('autofillcvlac.core.write')
     @patch('autofillcvlac.core.select')
     @patch('autofillcvlac.core.S')
     @patch('time.sleep')
-    def test_fill_scientific_article_success(self, mock_sleep, mock_S, mock_select, mock_write, mock_click, mock_go_to):
+    def test_fill_scientific_article_success(self, mock_sleep, mock_S, mock_select, mock_write, mock_click, mock_go_to, mock_Text, mock_wait_until, mock_get_driver):
         """Test successful scientific article form filling."""
         # Configure mocks
         mock_go_to.return_value = None
@@ -463,6 +466,15 @@ class TestAutofillcvlac(unittest.TestCase):
         mock_select.return_value = None
         mock_S.return_value = MagicMock()
         mock_sleep.return_value = None
+        mock_Text.return_value = MagicMock()
+        mock_wait_until.return_value = None
+        
+        # Mock selenium WebDriver elements
+        mock_driver = MagicMock()
+        mock_element = MagicMock()
+        mock_driver.find_element.return_value = mock_element
+        mock_driver.find_elements.return_value = [mock_element]
+        mock_get_driver.return_value = mock_driver
         
         # Call with valid parameters
         result = fill_scientific_article(
@@ -490,11 +502,20 @@ class TestAutofillcvlac(unittest.TestCase):
         self.assertTrue(mock_select.called)
         self.assertTrue(mock_click.called)
 
+    @patch('autofillcvlac.core.get_driver')
+    @patch('autofillcvlac.core.wait_until')
+    @patch('autofillcvlac.core.Text')
     @patch('autofillcvlac.core.go_to')
-    def test_fill_scientific_article_exception_handling(self, mock_go_to):
+    def test_fill_scientific_article_exception_handling(self, mock_go_to, mock_Text, mock_wait_until, mock_get_driver):
         """Test exception handling in fill_scientific_article."""
         # Mock an exception during navigation
         mock_go_to.side_effect = Exception("Navigation failed")
+        
+        # Configure other mocks to avoid browser requirement errors
+        mock_Text.return_value = MagicMock()
+        mock_wait_until.return_value = None
+        mock_driver = MagicMock()
+        mock_get_driver.return_value = mock_driver
         
         result = fill_scientific_article("Test Title")
         
