@@ -289,6 +289,129 @@ class TestAutofillcvlac(unittest.TestCase):
         self.assertIn('Authentication failed', result['message'])
         self.assertFalse(result['session_active'])
 
+    @patch('autofillcvlac.core.start_chrome')
+    @patch('autofillcvlac.core.go_to')
+    @patch('autofillcvlac.core.select')
+    @patch('autofillcvlac.core.write')
+    @patch('autofillcvlac.core.click')
+    @patch('autofillcvlac.core.S')
+    @patch('autofillcvlac.core.TextField')
+    @patch('autofillcvlac.core.Button')
+    @patch('autofillcvlac.core.Text')
+    @patch('time.sleep')
+    def test_authenticate_cvlac_login_success_check(self, mock_sleep, mock_text, mock_button, mock_textfield, mock_S, mock_click, mock_write, mock_select, mock_go_to, mock_start_chrome):
+        """Test that login success/failure is properly checked after form submission."""
+        # Configure mocks for successful case (no error indicators)
+        mock_start_chrome.return_value = MagicMock()
+        mock_go_to.return_value = None
+        mock_write.return_value = None
+        mock_click.return_value = None
+        mock_S.return_value = MagicMock()
+        mock_textfield.return_value = MagicMock()
+        mock_button.return_value = MagicMock()
+        mock_select.return_value = None
+        mock_sleep.return_value = None
+        
+        # Mock Text.exists() to return False (no error messages found)
+        mock_text_instance = MagicMock()
+        mock_text_instance.exists.return_value = False
+        mock_text.return_value = mock_text_instance
+        
+        # Mock S().exists() to return False (no error elements found)
+        mock_S_instance = MagicMock()
+        mock_S_instance.exists.return_value = False
+        mock_S.return_value = mock_S_instance
+        
+        # Call with valid parameters
+        result = authenticate_cvlac("Colombiana", "John Doe", "12345678", "password123", headless=True)
+        
+        # Should succeed when no error indicators are found
+        self.assertEqual(result["status"], "success")
+        self.assertTrue(result["session_active"])
+        self.assertEqual(result["message"], "Authentication successful")
+        
+        # Verify that sleep was called to wait for page response
+        mock_sleep.assert_called_once_with(2)
+
+    @patch('autofillcvlac.core.start_chrome')
+    @patch('autofillcvlac.core.go_to')
+    @patch('autofillcvlac.core.select')
+    @patch('autofillcvlac.core.write')
+    @patch('autofillcvlac.core.click')
+    @patch('autofillcvlac.core.S')
+    @patch('autofillcvlac.core.TextField')
+    @patch('autofillcvlac.core.Button')
+    @patch('autofillcvlac.core.Text')
+    @patch('time.sleep')
+    def test_authenticate_cvlac_login_failure_detection(self, mock_sleep, mock_text, mock_button, mock_textfield, mock_S, mock_click, mock_write, mock_select, mock_go_to, mock_start_chrome):
+        """Test that login failure is properly detected when error messages are present."""
+        # Configure mocks for failure case (error indicators present)
+        mock_start_chrome.return_value = MagicMock()
+        mock_go_to.return_value = None
+        mock_write.return_value = None
+        mock_click.return_value = None
+        mock_S.return_value = MagicMock()
+        mock_textfield.return_value = MagicMock()
+        mock_button.return_value = MagicMock()
+        mock_select.return_value = None
+        mock_sleep.return_value = None
+        
+        # Mock Text.exists() to return True for error message
+        mock_text_instance = MagicMock()
+        mock_text_instance.exists.return_value = True
+        mock_text.return_value = mock_text_instance
+        
+        # Call with valid parameters but simulate login failure
+        result = authenticate_cvlac("Colombiana", "John Doe", "12345678", "wrong_password", headless=True)
+        
+        # Should fail when error indicators are found
+        self.assertEqual(result["status"], "error")
+        self.assertFalse(result["session_active"])
+        self.assertIn("Authentication failed: Wrong credentials", result["message"])
+        
+        # Verify that sleep was called to wait for page response
+        mock_sleep.assert_called_once_with(2)
+
+    @patch('autofillcvlac.core.start_chrome')
+    @patch('autofillcvlac.core.go_to')
+    @patch('autofillcvlac.core.select')
+    @patch('autofillcvlac.core.write')
+    @patch('autofillcvlac.core.click')
+    @patch('autofillcvlac.core.S')
+    @patch('autofillcvlac.core.TextField')
+    @patch('autofillcvlac.core.Button')
+    @patch('autofillcvlac.core.Text')
+    @patch('time.sleep')
+    def test_authenticate_cvlac_error_element_detection(self, mock_sleep, mock_text, mock_button, mock_textfield, mock_S, mock_click, mock_write, mock_select, mock_go_to, mock_start_chrome):
+        """Test that login failure is detected via error CSS elements."""
+        # Configure mocks
+        mock_start_chrome.return_value = MagicMock()
+        mock_go_to.return_value = None
+        mock_write.return_value = None
+        mock_click.return_value = None
+        mock_textfield.return_value = MagicMock()
+        mock_button.return_value = MagicMock()
+        mock_select.return_value = None
+        mock_sleep.return_value = None
+        
+        # Mock Text.exists() to return False (no text error messages)
+        mock_text_instance = MagicMock()
+        mock_text_instance.exists.return_value = False
+        mock_text.return_value = mock_text_instance
+        
+        # Mock S().exists() to return True for error element
+        mock_S_instance = MagicMock()
+        mock_S_instance.exists.return_value = True
+        mock_S.return_value = mock_S_instance
+        
+        # Call with valid parameters but simulate error element present
+        result = authenticate_cvlac("Colombiana", "John Doe", "12345678", "wrong_password", headless=True)
+        
+        # Should fail when error elements are found
+        self.assertEqual(result["status"], "error")
+        self.assertFalse(result["session_active"])
+        self.assertIn("Authentication failed: Wrong credentials detected", result["message"])
+
 
 if __name__ == '__main__':
     unittest.main()
