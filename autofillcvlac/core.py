@@ -227,10 +227,64 @@ def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password
         # Submit form using the exact button ID
         click(S("#botonEnviar") or Button("Ingresar") or Button("Login") or Button("Entrar") or S("input[type='submit']"))
         
-        # Check for successful authentication
-        # This would need to be customized based on the actual success indicators
-        # For now, we'll assume success if no error elements are found
+        # Wait for page to respond after login attempt
+        import time
+        time.sleep(2)  # Give the page time to process the login
         
+        # Check for successful authentication by looking for error indicators
+        try:
+            # Common error indicators in CVLaC login page
+            error_indicators = [
+                "Usuario y/o contraseña incorrectos",
+                "Error de autenticación", 
+                "Login failed",
+                "Invalid credentials",
+                "Credenciales incorrectas",
+                "Error en el login"
+            ]
+            
+            # Check if any error messages are present on the page
+            for error_text in error_indicators:
+                if Text(error_text).exists():
+                    return {
+                        "status": "error",
+                        "message": f"Authentication failed: Wrong credentials. {error_text}",
+                        "session_active": False
+                    }
+            
+            # Check for error elements by common CSS classes/IDs
+            error_selectors = [
+                ".error",
+                ".alert-danger", 
+                ".alert-error",
+                "#error",
+                ".mensaje-error",
+                ".login-error"
+            ]
+            
+            for selector in error_selectors:
+                if S(selector).exists():
+                    try:
+                        error_element = S(selector)
+                        # Try to get the text content if possible
+                        return {
+                            "status": "error", 
+                            "message": "Authentication failed: Wrong credentials detected",
+                            "session_active": False
+                        }
+                    except:
+                        # If we can't read the element, still return error
+                        return {
+                            "status": "error",
+                            "message": "Authentication failed: Login error detected on page", 
+                            "session_active": False
+                        }
+                        
+        except Exception:
+            # If error checking fails, continue to assume success
+            pass
+        
+        # If no error indicators found, assume successful authentication
         result = {
             "status": "success",
             "message": "Authentication successful",
