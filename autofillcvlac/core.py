@@ -240,7 +240,8 @@ def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password
                 "Login failed",
                 "Invalid credentials",
                 "Credenciales incorrectas",
-                "Error en el login"
+                "Error en el login",
+                "Sus datos de identificación son erróneos o usted no se encuentra registrado en el sistema"
             ]
             
             # Check if any error messages are present on the page
