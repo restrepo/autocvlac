@@ -8,6 +8,10 @@ A Python package for processing research data and automatically fill the CVLaC (
 pip install autofillcvlac
 ```
 
+## Complete Usage Example
+
+For a comprehensive, step-by-step example of how to use this package, see the [check_github.ipynb](https://github.com/restrepo/autofillcvlac/blob/copilot/fix-45/check_github.ipynb) notebook. This Jupyter notebook demonstrates the complete workflow from API data extraction to CVLaC form filling.
+
 ## Usage
 
 ### Accessing Research Data from Impactu API
