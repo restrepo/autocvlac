@@ -150,6 +150,151 @@ def extract_scientific_article_data(product):
         dict: Dictionary with keys matching fill_scientific_article parameters, or None if 
               the product is not a journal article from impactu source
     """
+    
+    # Language code to Spanish name mapping
+    LANGUAGE_MAPPING = {
+        'es': 'Español',
+        'ab': 'Abjasio',
+        'aa': 'Afar',
+        'af': 'Africano',
+        'ay': 'Aimara',
+        'sq': 'Albanés',
+        'de': 'Alemán',
+        'am': 'Amhárico',
+        'ar': 'Árabe',
+        'hy': 'Armenio',
+        'as': 'Assamés',
+        'az': 'Azerbaijani',
+        'bal': 'Baluchi',
+        'ba': 'Bashkir',
+        'bn': 'Bengalí',
+        'ber': 'Berbere',
+        'be': 'Bielorruso',
+        'bh': 'Bihari',
+        'my': 'Birmano',
+        'bi': 'Bislama',
+        'br': 'Bretón',
+        'bg': 'Búlgaro',
+        'dz': 'Butaní',
+        'km': 'Camboyano',
+        'ca': 'Catalán',
+        'cs': 'Checo',
+        'zh': 'Chino',
+        'si': 'Cingalés',
+        'ko': 'Coreano',
+        'co': 'Corso',
+        'hr': 'Croata',
+        'ku': 'Curdo / Kurdo',
+        'da': 'Danés',
+        'dv': 'Divehi',
+        'sk': 'Eslovaco',
+        'sl': 'Esloveno',
+        'eo': 'Esperanto',
+        'et': 'Estonio',
+        'ee': 'Eue',
+        'fo': 'Faroese',
+        'fj': 'Fidjiano',
+        'tl': 'Filipino',
+        'fi': 'Finlandés',
+        'fr': 'Francés',
+        'fy': 'Frisón',
+        'gd': 'Gaélico',
+        'cy': 'Galés',
+        'gl': 'Gallego',
+        'ka': 'Georgiano',
+        'el': 'Griego',
+        'kl': 'Groenlandés',
+        'gn': 'Guaraní',
+        'gu': 'Gujarati',
+        'ha': 'Hausa',
+        'he': 'Hebreo',
+        'hi': 'Hindi',
+        'nl': 'Holandés',
+        'hu': 'Húngaro',
+        'id': 'Indonesio',
+        'en': 'Inglés',
+        'ia': 'Interlingua',
+        'ik': 'Inupiak',
+        'ga': 'Irlandés',
+        'is': 'Islandés',
+        'it': 'Italiano',
+        'ja': 'Japonés',
+        'jv': 'Javanés',
+        'kn': 'kannada',
+        'ks': 'Kashmiri',
+        'kk': 'Kazajio',
+        'rw': 'kinya-Ruanda',
+        'ky': 'Kirguiz',
+        'rn': 'Kirundi',
+        'lo': 'Laosiano',
+        'la': 'Latín',
+        'lv': 'Letón',
+        'ln': 'Lingala',
+        'lt': 'Lituano',
+        'lb': 'Luxemburgues',
+        'mk': 'Macedonio',
+        'ml': 'Malayalam',
+        'ms': 'Malayo',
+        'mg': 'Malgache',
+        'mt': 'Maltés',
+        'mi': 'Maorí',
+        'mr': 'Marathi',
+        'mo': 'Moldavio',
+        'mn': 'Mongol',
+        'me': 'Montenegrino',
+        'na': 'Nauruano',
+        'ne': 'Nepalés',
+        'no': 'Noruego',
+        'or': 'Oriya',
+        'om': 'Oromo',
+        'fa': 'Persa',
+        'pl': 'Polaco',
+        'pt': 'Portugués',
+        'pa': 'Punjabi',
+        'ps': 'Pushtu',
+        'qu': 'Quechua',
+        'sw': 'Quisuahili',
+        'rm': 'Reto-romano',
+        'ro': 'Rumano',
+        'ru': 'Ruso',
+        'sm': 'Samoano',
+        'sg': 'Sango',
+        'sa': 'Sánscrito',
+        'sr': 'Serbio',
+        'sh': 'Serbocroata',
+        'st': 'Sesotho',
+        'tn': 'Setswana',
+        'sn': 'Shona',
+        'sd': 'Sindhi',
+        'ss': 'Siswati',
+        'so': 'Somalí',
+        'su': 'Sudanés',
+        'sv': 'Sueco',
+        'th': 'Tailandés',
+        'tg': 'Tajiko',
+        'ta': 'Tamil',
+        'tt': 'Tártaro',
+        'te': 'Telugu',
+        'bo': 'Tibetano',
+        'ti': 'Tigrinya',
+        'to': 'Tongano',
+        'ts': 'Tsonga',
+        'tr': 'Turco',
+        'tk': 'Turkmeno',
+        'tv': 'Tuvaloano',
+        'tw': 'Twi',
+        'uk': 'Ucraniano',
+        'wo': 'Uolof',
+        'ur': 'Urdu',
+        'uz': 'Uzbeko',
+        'eu': 'Vasco',
+        'vi': 'Vietnamita',
+        'vo': 'Volapuk',
+        'xh': 'Xhosa',
+        'yi': 'Yiddish',
+        'yo': 'Yoruba',
+        'zu': 'Zulu'
+    }
     # Check if this is a journal article from impactu source
     types = product.get("types", [])
     is_journal_article = any(
@@ -204,24 +349,31 @@ def extract_scientific_article_data(product):
     initial_page = bibliographic_info.get("start_page")
     final_page = bibliographic_info.get("end_page")
     
-    # Extract DOI directly from the doi key
+    # Extract DOI directly from the doi key and remove https://doi.org/ prefix
     doi = product.get("doi")
+    if doi and doi.startswith("https://doi.org/"):
+        doi = doi[len("https://doi.org/"):]
     
     # Extract website URL (prefer DOI, then first available URL from external_urls)
     website_url = None
-    if doi:
-        website_url = doi
+    raw_doi = product.get("doi")
+    if raw_doi:
+        website_url = raw_doi
     else:
         external_urls = product.get("external_urls", [])
         if external_urls:
             website_url = external_urls[0].get("url")
+    
+    # Map language code to Spanish language name
+    language_code = title_language or "es"  # Use language from title, fallback to Spanish
+    language = LANGUAGE_MAPPING.get(language_code.lower(), language_code)
     
     return {
         "title": title,
         "article_type": "111",  # Default to "Completo"
         "initial_page": initial_page,
         "final_page": final_page,
-        "language": title_language or "ES",  # Use language from title, fallback to Spanish
+        "language": language,  # Mapped to Spanish language name
         "year": year,
         "month": month,
         "journal_name": journal_name,
