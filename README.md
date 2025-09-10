@@ -20,21 +20,24 @@ nested_list = [[1, 2], [3, 4], [5]]
 flat_list = flatten(nested_list)
 print(flat_list)  # [1, 2, 3, 4, 5]
 
-# Get research products and extract data for CVLaC forms
-response = get_research_products('67dc9885444bab3c3f1a7df2')
-if response.status_code == 200:
-    products = response.json().get('data', [])
+# Get research products from Impactu API using cod_rh (Colombian researcher identifier)
+# The cod_rh is the unique identifier for Colombian researchers registered in the 
+# Scienti platform of MINCIENCIAS. The Impactu API (https://impactu.colav.co/) 
+# provides access to research products that may be missing from researchers' CvLAC profiles.
+cod_rh = '0000177733'  # Example: Colombian researcher ID
+products = get_research_products(cod_rh)
     
-    # Filter journal articles missing in CvLAC
-    missing_articles = filter_missing_journal_articles(products)
-    
-    # Extract data for each article to use with fill_scientific_article
-    for product in missing_articles:
-        extracted_data = extract_scientific_article_data(product)
-        if extracted_data:
-            print(f"Ready to fill: {extracted_data['title']}")
-            # After authentication, use extracted data directly:
-            # fill_scientific_article(**extracted_data)
+# Filter journal articles missing in CvLAC - articles from the last 5 years 
+# that are not yet registered in the researcher's Scienti profile
+missing_articles = filter_missing_journal_articles(products)
+
+# Extract data for each article to use with fill_scientific_article
+for product in missing_articles:
+    extracted_data = extract_scientific_article_data(product)
+    if extracted_data:
+        print(f"Ready to fill: {extracted_data['title']}")
+        print(f"Journal: {extracted_data.get('journal_name', 'N/A')}")
+        print(f"Year: {extracted_data.get('year', 'N/A')}")
 
 # Secure credential input
 documento_identificacion = getpass.getpass('documento_identificacion: ')
@@ -47,7 +50,28 @@ auth_result = authenticate_cvlac(nacionalidad='Colombiana', nombres='John Doe',
 if auth_result['status'] == 'success':
     print("Authentication successful!")
     
-    # Fill scientific article form
+    # Example 1: Fill form with extracted data from Impactu API
+    # Use the first missing article found earlier
+    if missing_articles:
+        first_article = missing_articles[0]
+        extracted_data = extract_scientific_article_data(first_article)
+        
+        if extracted_data:
+            print(f"Filling form for: {extracted_data['title']}")
+            # Fill the scientific article form using extracted data
+            article_result = fill_scientific_article(**extracted_data)
+            
+            if article_result['status'] == 'success':
+                print("Article form filled successfully!")
+                # Take screenshot to show results (saved as result.png)
+                from helium import get_driver
+                driver = get_driver()
+                driver.get_screenshot_as_file('result.png')
+                print("Screenshot saved as result.png showing the filled form")
+            else:
+                print(f"Error: {article_result['message']}")
+    
+    # Example 2: Manual form filling with custom data
     article_result = fill_scientific_article(
         title="Machine Learning Applications in Healthcare",
         article_type="111",  # Completo
@@ -58,7 +82,7 @@ if auth_result['status'] == 'success':
         month=6,
         volume="10",
         issue="2",
-        publication_medium="H",  # Electrónico
+        publication_medium="Electrónico",
         website_url="https://example-journal.com/article/123",
         doi="10.1234/example.2023.123"
     )
@@ -91,6 +115,21 @@ if response.status_code == 200:
     df = create_products_dataframe(filtered_products)
     print(df.head())
 ```
+
+![Result Screenshot](result.png)
+
+*The screenshot above shows the CVLaC interface after successfully filling a scientific article form using the `fill_scientific_article(**extracted_data)` function. The form fields are automatically populated with data extracted from the Impactu API.*
+
+## Key Features: Impactu API Integration
+
+This package leverages the **Impactu API** (https://impactu.colav.co/) to identify research products missing from Colombian researchers' CvLAC profiles:
+
+- **`cod_rh`**: The unique identifier for Colombian researchers registered in the Scienti platform of MINCIENCIAS
+- **Missing Product Detection**: Automatically identifies journal articles from the last 5 years that haven't been registered in CvLAC
+- **Automated Data Extraction**: Converts research product metadata into CVLaC form parameters
+- **Seamless Integration**: Direct workflow from API data to form filling with `fill_scientific_article(**extracted_data)`
+
+The API provides comprehensive research data that researchers can use to keep their CvLAC profiles up-to-date with their latest publications.
 
 ## Features
 
