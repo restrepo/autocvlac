@@ -824,7 +824,7 @@ class TestAutofillcvlac(unittest.TestCase):
         # Verify the extraction was successful
         self.assertIsNotNone(result)
         self.assertEqual(result['title'], 'Neutrino masses in SU(5)×U(1) F with adjoint flavons')  # First title
-        self.assertEqual(result['language'], 'en')  # Language from first title
+        self.assertEqual(result['language'], 'Inglés')  # Language mapped from 'en' to Spanish
         self.assertEqual(result['year'], 2012)
         self.assertEqual(result['month'], 'Marzo')  # March in Spanish
         self.assertEqual(result['journal_name'], 'The European Physical Journal C')
@@ -833,8 +833,8 @@ class TestAutofillcvlac(unittest.TestCase):
         self.assertEqual(result['issue'], '3')
         self.assertEqual(result['initial_page'], '1')
         self.assertEqual(result['final_page'], '9')
-        self.assertEqual(result['doi'], 'https://doi.org/10.1140/epjc/s10052-012-1941-1')  # Full DOI URL
-        self.assertEqual(result['website_url'], 'https://doi.org/10.1140/epjc/s10052-012-1941-1')  # Website URL uses DOI when available
+        self.assertEqual(result['doi'], '10.1140/epjc/s10052-012-1941-1')  # DOI without https://doi.org/ prefix
+        self.assertEqual(result['website_url'], 'https://doi.org/10.1140/epjc/s10052-012-1941-1')  # Website URL still uses full DOI URL
         self.assertEqual(result['article_type'], '111')  # Default
         self.assertEqual(result['publication_medium'], 'Electrónico')  # Default
 
@@ -876,7 +876,7 @@ class TestAutofillcvlac(unittest.TestCase):
         
         self.assertIsNotNone(result)
         self.assertEqual(result['title'], 'Minimal Article')
-        self.assertEqual(result['language'], 'ES')  # Falls back to ES when no lang in title
+        self.assertEqual(result['language'], 'Español')  # Falls back to Spanish when no lang in title
         self.assertEqual(result['year'], 2023)
         self.assertIsNone(result['month'])
         self.assertIsNone(result['journal_name'])
@@ -921,6 +921,90 @@ class TestAutofillcvlac(unittest.TestCase):
         self.assertIsNotNone(result)
         self.assertIsNone(result['doi'])  # No DOI available
         self.assertEqual(result['website_url'], 'https://example.com/article')  # First external URL
+
+    def test_extract_scientific_article_data_doi_prefix_removal(self):
+        """Test that https://doi.org/ prefix is removed from DOI output."""
+        product = {
+            'titles': [{'title': 'Test Article', 'lang': 'en'}],
+            'types': [{'source': 'impactu', 'type': 'Artículo de revista'}],
+            'year_published': 2023,
+            'doi': 'https://doi.org/10.1234/test.doi.2023.001'
+        }
+        
+        result = extract_scientific_article_data(product)
+        
+        self.assertIsNotNone(result)
+        self.assertEqual(result['doi'], '10.1234/test.doi.2023.001')  # Prefix removed
+        self.assertEqual(result['website_url'], 'https://doi.org/10.1234/test.doi.2023.001')  # Website URL keeps full URL
+
+    def test_extract_scientific_article_data_doi_without_prefix(self):
+        """Test handling of DOI that doesn't have https://doi.org/ prefix."""
+        product = {
+            'titles': [{'title': 'Test Article', 'lang': 'en'}],
+            'types': [{'source': 'impactu', 'type': 'Artículo de revista'}],
+            'year_published': 2023,
+            'doi': '10.1234/bare.doi.2023.001'  # No prefix
+        }
+        
+        result = extract_scientific_article_data(product)
+        
+        self.assertIsNotNone(result)
+        self.assertEqual(result['doi'], '10.1234/bare.doi.2023.001')  # Unchanged since no prefix
+        self.assertEqual(result['website_url'], '10.1234/bare.doi.2023.001')  # Website URL uses the same value
+
+    def test_extract_scientific_article_data_language_mapping(self):
+        """Test language code to Spanish name mapping."""
+        test_cases = [
+            ('en', 'Inglés'),
+            ('es', 'Español'),
+            ('fr', 'Francés'),
+            ('de', 'Alemán'),
+            ('it', 'Italiano'),
+            ('pt', 'Portugués'),
+            ('zh', 'Chino'),
+            ('ja', 'Japonés'),
+            ('ru', 'Ruso'),
+            ('ar', 'Árabe'),
+        ]
+        
+        for lang_code, expected_spanish in test_cases:
+            with self.subTest(lang_code=lang_code):
+                product = {
+                    'titles': [{'title': 'Test Article', 'lang': lang_code}],
+                    'types': [{'source': 'impactu', 'type': 'Artículo de revista'}],
+                    'year_published': 2023
+                }
+                
+                result = extract_scientific_article_data(product)
+                
+                self.assertIsNotNone(result)
+                self.assertEqual(result['language'], expected_spanish)
+
+    def test_extract_scientific_article_data_unknown_language_code(self):
+        """Test handling of unknown language codes."""
+        product = {
+            'titles': [{'title': 'Test Article', 'lang': 'xyz'}],  # Unknown language code
+            'types': [{'source': 'impactu', 'type': 'Artículo de revista'}],
+            'year_published': 2023
+        }
+        
+        result = extract_scientific_article_data(product)
+        
+        self.assertIsNotNone(result)
+        self.assertEqual(result['language'], 'xyz')  # Should return the original code if not found
+
+    def test_extract_scientific_article_data_case_insensitive_language(self):
+        """Test that language mapping is case insensitive."""
+        product = {
+            'titles': [{'title': 'Test Article', 'lang': 'EN'}],  # Uppercase
+            'types': [{'source': 'impactu', 'type': 'Artículo de revista'}],
+            'year_published': 2023
+        }
+        
+        result = extract_scientific_article_data(product)
+        
+        self.assertIsNotNone(result)
+        self.assertEqual(result['language'], 'Inglés')  # Should map correctly despite case
 
 
 if __name__ == '__main__':
