@@ -69,6 +69,71 @@ def filter_products_by_year(products, start_year):
     return filtered
 
 
+def filter_missing_journal_articles(products, current_year=None):
+    """
+    Filter journal articles which are missing in CvLAC for an author identificator.
+    
+    This function filters research products with the following criteria:
+    1. No Scienti external IDs: external_ids must not contain entries with 
+       both provenance='scienti' and source='scienti'
+    2. Journal articles only: types must contain entries with 
+       source='impactu' and type='Artículo de revista'
+    3. Last five years: year_published must be from the last five years
+    4. Must have ISSN/EISSN: source.external_ids must contain either 'issn' or 'eissn'
+    
+    Args:
+        products: List of product dictionaries from get_research_products
+        current_year: Current year for calculating last 5 years (default: uses datetime.now().year)
+        
+    Returns:
+        Filtered list of journal article products meeting all criteria
+    """
+    if current_year is None:
+        current_year = datetime.now().year
+    
+    start_year = current_year - 4  # Last 5 years: current + 4 previous years
+    filtered = []
+    
+    for product in products:
+        # Criterion 1: Filter out products with scienti provenance AND source
+        external_ids = product.get("external_ids", [])
+        has_scienti_both = any(
+            ext_id.get('provenance') == 'scienti' and ext_id.get('source') == 'scienti'
+            for ext_id in external_ids
+        )
+        
+        if has_scienti_both:
+            continue
+            
+        # Criterion 2: Include only journal articles (impactu source, "Artículo de revista" type)
+        types = product.get("types", [])
+        is_journal_article = any(
+            type_entry.get('source') == 'impactu' and type_entry.get('type') == 'Artículo de revista'
+            for type_entry in types
+        )
+        
+        if not is_journal_article:
+            continue
+            
+        # Criterion 3: Include only articles from last 5 years
+        year_published = product.get("year_published")
+        if not year_published or year_published < start_year:
+            continue
+            
+        # Criterion 4: Include only articles with ISSN or EISSN
+        source = product.get("source", {})
+        source_external_ids = source.get("external_ids", {})
+        has_issn = 'issn' in source_external_ids or 'eissn' in source_external_ids
+        
+        if not has_issn:
+            continue
+            
+        # If all criteria are met, include the product
+        filtered.append(product)
+    
+    return filtered
+
+
 def create_products_dataframe(products):
     """
     Create a pandas DataFrame from research products.
