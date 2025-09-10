@@ -10,6 +10,10 @@ pip install autofillcvlac
 
 ## Usage
 
+### Basic Data Processing
+
+Start by importing the necessary modules and performing basic data operations:
+
 ```python
 from autofillcvlac import flatten, authenticate_cvlac, fill_scientific_article, extract_scientific_article_data
 from autofillcvlac.core import get_research_products, filter_products_by_year, create_products_dataframe, filter_missing_journal_articles
@@ -19,16 +23,22 @@ import getpass
 nested_list = [[1, 2], [3, 4], [5]]
 flat_list = flatten(nested_list)
 print(flat_list)  # [1, 2, 3, 4, 5]
+```
 
-# Get research products from Impactu API using cod_rh (Colombian researcher identifier)
-# The cod_rh is the unique identifier for Colombian researchers registered in the 
-# Scienti platform of MINCIENCIAS. The Impactu API (https://impactu.colav.co/) 
-# provides access to research products that may be missing from researchers' CvLAC profiles.
+### Accessing Research Data from Impactu API
+
+The `cod_rh` is the unique identifier for Colombian researchers registered in the Scienti platform of MINCIENCIAS. The Impactu API (https://impactu.colav.co/) provides access to research products that may be missing from researchers' CvLAC profiles.
+
+```python
 cod_rh = '0000177733'  # Example: Colombian researcher ID
 products = get_research_products(cod_rh)
-    
-# Filter journal articles missing in CvLAC - articles from the last 5 years 
-# that are not yet registered in the researcher's Scienti profile
+```
+
+### Finding Missing Journal Articles
+
+Filter journal articles missing in CvLAC - these are articles from the last 5 years that are not yet registered in the researcher's Scienti profile:
+
+```python
 missing_articles = filter_missing_journal_articles(products)
 
 # Extract data for each article to use with fill_scientific_article
@@ -38,43 +48,59 @@ for product in missing_articles:
         print(f"Ready to fill: {extracted_data['title']}")
         print(f"Journal: {extracted_data.get('journal_name', 'N/A')}")
         print(f"Year: {extracted_data.get('year', 'N/A')}")
+```
 
-# Secure credential input
+### Secure Authentication
+
+Use secure credential input for CVLaC authentication:
+
+```python
 documento_identificacion = getpass.getpass('documento_identificacion: ')
 password = getpass.getpass('password: ')
 
-# Authenticate with CVLaC system
 auth_result = authenticate_cvlac(nacionalidad='Colombiana', nombres='John Doe', 
                                 documento_identificacion=documento_identificacion, 
                                 password=password, headless=False)
+```
+
+### Filling Scientific Article Forms
+
+Once authenticated, you can fill scientific article forms using two approaches:
+
+#### Example 1: Using Data Extracted from Impactu API
+
+Use the first missing article found from the API and automatically fill the form with extracted data:
+
+```python
 if auth_result['status'] == 'success':
     print("Authentication successful!")
     
-    # Example 1: Fill form with extracted data from Impactu API
-    # Use the first missing article found earlier
     if missing_articles:
         first_article = missing_articles[0]
         extracted_data = extract_scientific_article_data(first_article)
         
         if extracted_data:
             print(f"Filling form for: {extracted_data['title']}")
-            # Fill the scientific article form using extracted data
             article_result = fill_scientific_article(**extracted_data)
             
             if article_result['status'] == 'success':
                 print("Article form filled successfully!")
-                # Take screenshot to show results (saved as result.png)
                 from helium import get_driver
                 driver = get_driver()
                 driver.get_screenshot_as_file('result.png')
                 print("Screenshot saved as result.png showing the filled form")
             else:
                 print(f"Error: {article_result['message']}")
-    
-    # Example 2: Manual form filling with custom data
+```
+
+#### Example 2: Manual Form Filling with Custom Data
+
+Fill the form manually with your own research article data:
+
+```python
     article_result = fill_scientific_article(
         title="Machine Learning Applications in Healthcare",
-        article_type="111",  # Completo
+        article_type="111",
         initial_page="15",
         final_page="28", 
         language="EN",
@@ -93,8 +119,13 @@ if auth_result['status'] == 'success':
         print(f"Error: {article_result['message']}")
 else:
     print(f"Authentication failed: {auth_result['message']}")
+```
 
-# Authenticate with CVLaC system for foreign nationality
+### Foreign Nationality Authentication
+
+For researchers with foreign nationality, use the extended authentication parameters:
+
+```python
 auth_result = authenticate_cvlac(nacionalidad='Extranjero - otra', nombres='John Doe', 
                                 documento_identificacion='dummy', password='your_password', 
                                 pais_nacimiento='Estados Unidos', fecha_nacimiento='1990-05-15')
@@ -102,16 +133,19 @@ if auth_result['status'] == 'success':
     print("Authentication successful!")
 else:
     print(f"Authentication failed: {auth_result['message']}")
+```
 
-# Get research products from API
+### Advanced Data Analysis
+
+Perform additional data processing and analysis:
+
+```python
 response = get_research_products('67dc9885444bab3c3f1a7df2')
 if response.status_code == 200:
     products = response.json().get('data', [])
     
-    # Filter products by year
     filtered_products = filter_products_by_year(products, 2002)
     
-    # Create DataFrame for analysis
     df = create_products_dataframe(filtered_products)
     print(df.head())
 ```
@@ -145,4 +179,4 @@ The API provides comprehensive research data that researchers can use to keep th
 
 ## Development
 
-This package is built from research workflows originally developed in Jupyter notebooks for analyzing academic publication data from Latin American and Caribbean researchers.
+This package is built from research workflows originally developed in Jupyter notebooks for analyzing academic publication data from Colombian researchers registered in the Scienti platform of MINCIENCIAS.
