@@ -809,6 +809,7 @@ class TestAutofillcvlac(unittest.TestCase):
                 'start_page': '1',
                 'end_page': '9'
             },
+            'doi': 'https://doi.org/10.1140/epjc/s10052-012-1941-1',
             'external_ids': [
                 {'id': 'https://doi.org/10.1140/epjc/s10052-012-1941-1', 'source': 'doi'},
                 {'id': 'https://openalex.org/W1571169636', 'source': 'openalex'}
@@ -822,7 +823,8 @@ class TestAutofillcvlac(unittest.TestCase):
         
         # Verify the extraction was successful
         self.assertIsNotNone(result)
-        self.assertEqual(result['title'], 'Neutrino masses in SU(5)×U(1) F with adjoint flavons')
+        self.assertEqual(result['title'], 'Neutrino masses in SU(5)×U(1) F with adjoint flavons')  # First title
+        self.assertEqual(result['language'], 'en')  # Language from first title
         self.assertEqual(result['year'], 2012)
         self.assertEqual(result['month'], 'Marzo')  # March in Spanish
         self.assertEqual(result['journal_name'], 'The European Physical Journal C')
@@ -831,10 +833,9 @@ class TestAutofillcvlac(unittest.TestCase):
         self.assertEqual(result['issue'], '3')
         self.assertEqual(result['initial_page'], '1')
         self.assertEqual(result['final_page'], '9')
-        self.assertEqual(result['doi'], '10.1140/epjc/s10052-012-1941-1')  # DOI without https:// prefix
+        self.assertEqual(result['doi'], 'https://doi.org/10.1140/epjc/s10052-012-1941-1')  # Full DOI URL
         self.assertEqual(result['website_url'], 'http://arxiv.org/pdf/1108.0722')
         self.assertEqual(result['article_type'], '111')  # Default
-        self.assertEqual(result['language'], 'ES')  # Default
         self.assertEqual(result['publication_medium'], 'Electrónico')  # Default
 
     def test_extract_scientific_article_data_not_journal_article(self):
@@ -875,6 +876,7 @@ class TestAutofillcvlac(unittest.TestCase):
         
         self.assertIsNotNone(result)
         self.assertEqual(result['title'], 'Minimal Article')
+        self.assertEqual(result['language'], 'ES')  # Falls back to ES when no lang in title
         self.assertEqual(result['year'], 2023)
         self.assertIsNone(result['month'])
         self.assertIsNone(result['journal_name'])

@@ -91,7 +91,7 @@ def filter_missing_journal_articles(products, current_year=None):
     if current_year is None:
         current_year = datetime.now().year
     
-    start_year = current_year - 5  # Last 6 years: current + 5 previous years
+    start_year = current_year - 4  # Last 5 years: current + 4 previous years
     filtered = []
     
     for product in products:
@@ -160,18 +160,14 @@ def extract_scientific_article_data(product):
     if not is_journal_article:
         return None
     
-    # Extract title (prefer English, fallback to first available)
+    # Extract title from the first entry in titles list
     titles = product.get("titles", [])
     title = None
+    title_language = None
     if titles:
-        # Try to find English title first
-        for title_entry in titles:
-            if title_entry.get("lang") == "en":
-                title = title_entry.get("title")
-                break
-        # If no English title found, use the first one
-        if not title and titles:
-            title = titles[0].get("title")
+        first_title = titles[0]
+        title = first_title.get("title")
+        title_language = first_title.get("lang")
     
     # Extract year
     year = product.get("year_published")
@@ -208,16 +204,8 @@ def extract_scientific_article_data(product):
     initial_page = bibliographic_info.get("start_page")
     final_page = bibliographic_info.get("end_page")
     
-    # Extract DOI from external_ids
-    doi = None
-    external_ids = product.get("external_ids", [])
-    for ext_id in external_ids:
-        if ext_id.get("source") == "doi":
-            doi = ext_id.get("id")
-            # Remove https:// prefix if present for cleaner DOI
-            if doi and doi.startswith("https://doi.org/"):
-                doi = doi.replace("https://doi.org/", "")
-            break
+    # Extract DOI directly from the doi key
+    doi = product.get("doi")
     
     # Extract website URL (prefer open access URLs)
     website_url = None
@@ -236,7 +224,7 @@ def extract_scientific_article_data(product):
         "article_type": "111",  # Default to "Completo"
         "initial_page": initial_page,
         "final_page": final_page,
-        "language": "ES",  # Default to Spanish
+        "language": title_language or "ES",  # Use language from title, fallback to Spanish
         "year": year,
         "month": month,
         "journal_name": journal_name,
