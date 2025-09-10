@@ -15,7 +15,7 @@ pip install autofillcvlac
 The `cod_rh` is the unique identifier for Colombian researchers registered in the Scienti platform of MINCIENCIAS. The Impactu API (https://impactu.colav.co/) provides access to research products that may be missing from researchers' CvLAC profiles.
 
 ```python
-from autofillcvlac import flatten, authenticate_cvlac, fill_scientific_article, extract_scientific_article_data
+from autofillcvlac import authenticate_cvlac, fill_scientific_article, extract_scientific_article_data
 from autofillcvlac.core import get_research_products, filter_products_by_year, create_products_dataframe, filter_missing_journal_articles
 import getpass
 
