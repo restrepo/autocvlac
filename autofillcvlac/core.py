@@ -321,18 +321,26 @@ def get_journal(journal_issn):
                 "session_active": True
             }
 
-def get_publication_medium(publication_medium):
-    wait_until(Text('Buscar').exists)
+def select_from_list(name, match):
+    """
+    Select match from the list with name
+
+    Parameters:
+       name (str): name tag of the list
+       match (str): element of the list
+    """
     try:
         driver = get_driver()
-        pe = driver.find_element(By.NAME, 'tpo_medio_divulgacion')
-        peb = pe.find_elements(By.TAG_NAME,'option')
-        # Map codes to text values
-        medium_text = "Papel" if publication_medium == "I" else "Electrónico"
-        pm = [p for p in peb if p.text == medium_text][0]
+        pe = driver.find_element(By.NAME, name)
+        peb =pe.find_elements(By.TAG_NAME,'option')
+        pm = [p for p in peb if p.text == str(match)][0]
         pm.click()
-    except:
-        pass
+    except Exception as e:
+        return {
+                "status": "error",
+                "message": f"Failed to fill scientific article form: {str(e)}",
+                "session_active": True
+        }
 
 def fill_scientific_article(
     title,
@@ -347,7 +355,7 @@ def fill_scientific_article(
     volume=None,
     issue=None,
     series=None,
-    publication_medium="I",  # Default to "Papel"
+    publication_medium="Electrónico",  # Default to "Electrónico"
     website_url=None,
     doi=None
 ):
@@ -367,7 +375,7 @@ def fill_scientific_article(
         volume (str, optional): Journal volume
         issue (str, optional): Journal issue/fascicle
         series (str, optional): Journal series
-        publication_medium (str): Publication medium - "I" (Papel) or "H" (Electrónico). Default: "I"
+        publication_medium (str): Publication medium - "Papel" or "Electrónico". Default: "Electrónico"
         website_url (str, optional): Website URL
         doi (str, optional): DOI (Digital Object Identifier)
         
@@ -392,11 +400,11 @@ def fill_scientific_article(
         }
     
     # Validate publication_medium
-    valid_mediums = ["I", "H"]
+    valid_mediums = ["Papel", "Electrónico"]
     if publication_medium not in valid_mediums:
         return {
             "status": "error",
-            "message": f"publication_medium must be one of {valid_mediums} (I=Papel, H=Electrónico)",
+            "message": f"publication_medium must be one of {valid_mediums}",
             "session_active": True
         }
     
@@ -439,14 +447,14 @@ def fill_scientific_article(
             write(str(final_page), into=S("[name='txt_pagina_final']"))
         
         # Select language
-        select(S("[name='sgl_idioma']"), language)
+        select_from_list('sgl_idioma', language)
         
         # Select year if provided
         if year:
-            select(S("[name='nro_ano_presenta']"), str(year))
+            select_from_list('nro_ano_presenta', str(year))
         
         # Select month
-        select(S("[name='nro_mes_presenta']"), str(month))
+        select_from_list('nro_mes_presenta', str(month))
         
         # Fill journal name if provided (note: this is a readonly field that normally requires search)
         # We'll just try to fill it directly, but user may need to use the search functionality
@@ -474,7 +482,7 @@ def fill_scientific_article(
         
         # Select publication medium
         if publication_medium:
-            get_publication_medium(publication_medium)
+            select_from_list('tpo_medio_divulgacion', publication_medium)
         
         # Fill website URL if provided
         if website_url:
