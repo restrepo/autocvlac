@@ -11,13 +11,29 @@ pip install autofillcvlac
 ## Usage
 
 ```python
-from autofillcvlac import flatten, authenticate_cvlac, fill_scientific_article
-from autofillcvlac.core import get_research_products, filter_products_by_year, create_products_dataframe
+from autofillcvlac import flatten, authenticate_cvlac, fill_scientific_article, extract_scientific_article_data
+from autofillcvlac.core import get_research_products, filter_products_by_year, create_products_dataframe, filter_missing_journal_articles
 
 # Flatten a list of lists
 nested_list = [[1, 2], [3, 4], [5]]
 flat_list = flatten(nested_list)
 print(flat_list)  # [1, 2, 3, 4, 5]
+
+# Get research products and extract data for CVLaC forms
+response = get_research_products('67dc9885444bab3c3f1a7df2')
+if response.status_code == 200:
+    products = response.json().get('data', [])
+    
+    # Filter journal articles missing in CvLAC
+    missing_articles = filter_missing_journal_articles(products)
+    
+    # Extract data for each article to use with fill_scientific_article
+    for product in missing_articles:
+        extracted_data = extract_scientific_article_data(product)
+        if extracted_data:
+            print(f"Ready to fill: {extracted_data['title']}")
+            # Use extracted data directly with fill_scientific_article
+            # result = fill_scientific_article(**extracted_data)
 
 # Authenticate with CVLaC system
 auth_result = authenticate_cvlac('Colombian', 'John Doe', '12345678', 'your_password')
@@ -72,6 +88,8 @@ if response.status_code == 200:
 
 - Fetch research products from the Impactu API
 - Filter products by publication year and source
+- **Filter journal articles missing in CvLAC** by criteria (issue #39)
+- **Extract scientific article data** from research product dictionaries for CVLaC forms
 - Convert research data to pandas DataFrames for analysis
 - Extract citation counts from multiple sources (OpenAlex, Scholar)
 - Process author information and external IDs
