@@ -462,7 +462,7 @@ def fill_date_of_birth(fecha_nacimiento):
             }
 
 
-def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password, pais_nacimiento=None, fecha_nacimiento=None, headless=True):
+def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password, pais_nacimiento=None, fecha_nacimiento=None, headless=False):
     """
     Authenticate with the CVLaC (Curriculum Vitae de Latinoamérica y el Caribe) system.
     
@@ -473,7 +473,7 @@ def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password
         password (str): The password for CVLaC login
         pais_nacimiento (str, optional): Country of birth (required when nacionalidad is "Extranjero - otra" or "E")
         fecha_nacimiento (str, optional): Date of birth in format YYYY-MM-DD (required when nacionalidad is "Extranjero - otra" or "E")
-        headless (bool): Whether to run browser in headless mode (default: True)
+        headless (bool): Whether to run browser in headless mode (default: False)
         
     Returns:
         dict: Authentication result with status and session information
