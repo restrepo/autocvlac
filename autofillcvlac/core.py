@@ -34,9 +34,8 @@ def get_research_products(id_cod_rh, max_results=200, page=1):
     Returns:
         Response object from the API call
     """
-    url = f'https://api.impactu.colav.co/person/{id_cod_rh}/research/products'
-    params = {'max': max_results, 'page': page}
-    return requests.get(url, params=params)
+    url = f'https://api.impactu.colav.co/person/{id_cod_rh}/research/products?max={max_results}&page={page}'
+    return requests.get(url)
 
 
 def filter_products_by_year(products, start_year):
