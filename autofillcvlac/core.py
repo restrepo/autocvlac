@@ -22,26 +22,26 @@ def flatten(xss):
     return [x for xs in xss for x in xs]
 
 
-def get_research_products(id_cod_rh, max_results=200, page=1):
+def get_research_products(cod_rh, max_results=200, page=1):
     """
     Get research products from the Impactu API.
     
     Args:
-        id_cod_rh: The researcher ID
+        cod_rh: The researcher ID
         max_results: Maximum number of results to return (default: 200)
         page: Page number (default: 1)
         
     Returns:
         Response object from the API call
     """
-    url = f'https://api.impactu.colav.co/person/{id_cod_rh}/research/products?max={max_results}&page={page}'
+    url = f'https://api.impactu.colav.co/person/{cod_rh}/research/products?max={max_results}&page={page}'
     r = requests.get(url)
     if r.status_code == 200:
         return r.json()['data']
     else:
         return {
                 "status": "error", 
-                "message": f"Not research products for: {str(id_cod_rh)}",
+                "message": f"Not research products for: {str(cod_rh)}",
                 "session_active": False
             }
 
