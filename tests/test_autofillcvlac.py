@@ -75,6 +75,12 @@ class TestAutofillcvlac(unittest.TestCase):
         self.assertEqual(result["status"], "error")
         self.assertFalse(result["session_active"])
         
+        # Test invalid browser parameter
+        result = authenticate_cvlac("Colombian", "John Doe", "12345678", "password123", browser="safari")
+        self.assertEqual(result["status"], "error")
+        self.assertIn("browser must be one of", result["message"])
+        self.assertFalse(result["session_active"])
+        
         # Test missing pais_nacimiento when nationality is "Extranjero - otra"
         result = authenticate_cvlac("Extranjero - otra", "John Doe", "12345678", "password123")
         self.assertEqual(result["status"], "error")
@@ -130,6 +136,10 @@ class TestAutofillcvlac(unittest.TestCase):
         # Test that default values are None
         self.assertEqual(sig.parameters['pais_nacimiento'].default, None)
         self.assertEqual(sig.parameters['fecha_nacimiento'].default, None)
+        
+        # Test that browser parameter exists and has correct default
+        self.assertIn('browser', param_names)
+        self.assertEqual(sig.parameters['browser'].default, 'chrome')
     
     def test_authenticate_cvlac_browser_not_killed_on_validation_error(self):
         """Test that kill_browser is not called when validation fails."""
@@ -411,6 +421,164 @@ class TestAutofillcvlac(unittest.TestCase):
         self.assertEqual(result["status"], "error")
         self.assertFalse(result["session_active"])
         self.assertIn("Authentication failed: Wrong credentials detected", result["message"])
+
+    @patch('autofillcvlac.core.start_firefox')
+    @patch('autofillcvlac.core.start_chrome')
+    @patch('autofillcvlac.core.go_to')
+    @patch('autofillcvlac.core.select')
+    @patch('autofillcvlac.core.write')
+    @patch('autofillcvlac.core.click')
+    @patch('autofillcvlac.core.S')
+    @patch('autofillcvlac.core.TextField')
+    @patch('autofillcvlac.core.Button')
+    @patch('autofillcvlac.core.Text')
+    @patch('time.sleep')
+    def test_authenticate_cvlac_firefox_browser(self, mock_sleep, mock_text, mock_button, mock_textfield, mock_S, mock_click, mock_write, mock_select, mock_go_to, mock_start_chrome, mock_start_firefox):
+        """Test that Firefox browser is used when browser='firefox'."""
+        # Configure mocks
+        mock_start_firefox.return_value = MagicMock()
+        mock_start_chrome.return_value = MagicMock()
+        mock_go_to.return_value = None
+        mock_write.return_value = None
+        mock_click.return_value = None
+        mock_S.return_value = MagicMock()
+        mock_textfield.return_value = MagicMock()
+        mock_button.return_value = MagicMock()
+        mock_select.return_value = None
+        mock_sleep.return_value = None
+        
+        # Mock Text.exists() to return False (no error messages found)
+        mock_text_instance = MagicMock()
+        mock_text_instance.exists.return_value = False
+        mock_text.return_value = mock_text_instance
+        
+        # Mock S().exists() to return False (no error elements found)
+        mock_S_instance = MagicMock()
+        mock_S_instance.exists.return_value = False
+        mock_S.return_value = mock_S_instance
+        
+        # Call with firefox browser parameter
+        result = authenticate_cvlac("Colombiana", "John Doe", "12345678", "password123", browser="firefox", headless=True)
+        
+        # Should succeed
+        self.assertEqual(result["status"], "success")
+        self.assertTrue(result["session_active"])
+        
+        # Verify start_firefox was called, not start_chrome
+        mock_start_firefox.assert_called_once_with(headless=True)
+        mock_start_chrome.assert_not_called()
+
+    @patch('autofillcvlac.core.start_firefox')
+    @patch('autofillcvlac.core.start_chrome')
+    @patch('autofillcvlac.core.go_to')
+    @patch('autofillcvlac.core.select')
+    @patch('autofillcvlac.core.write')
+    @patch('autofillcvlac.core.click')
+    @patch('autofillcvlac.core.S')
+    @patch('autofillcvlac.core.TextField')
+    @patch('autofillcvlac.core.Button')
+    @patch('autofillcvlac.core.Text')
+    @patch('time.sleep')
+    def test_authenticate_cvlac_chrome_browser(self, mock_sleep, mock_text, mock_button, mock_textfield, mock_S, mock_click, mock_write, mock_select, mock_go_to, mock_start_chrome, mock_start_firefox):
+        """Test that Chrome browser is used when browser='chrome' (default and explicit)."""
+        # Configure mocks
+        mock_start_firefox.return_value = MagicMock()
+        mock_start_chrome.return_value = MagicMock()
+        mock_go_to.return_value = None
+        mock_write.return_value = None
+        mock_click.return_value = None
+        mock_S.return_value = MagicMock()
+        mock_textfield.return_value = MagicMock()
+        mock_button.return_value = MagicMock()
+        mock_select.return_value = None
+        mock_sleep.return_value = None
+        
+        # Mock Text.exists() to return False (no error messages found)
+        mock_text_instance = MagicMock()
+        mock_text_instance.exists.return_value = False
+        mock_text.return_value = mock_text_instance
+        
+        # Mock S().exists() to return False (no error elements found)
+        mock_S_instance = MagicMock()
+        mock_S_instance.exists.return_value = False
+        mock_S.return_value = mock_S_instance
+        
+        # Test explicit chrome parameter
+        result = authenticate_cvlac("Colombiana", "John Doe", "12345678", "password123", browser="chrome", headless=True)
+        
+        # Should succeed
+        self.assertEqual(result["status"], "success")
+        self.assertTrue(result["session_active"])
+        
+        # Verify start_chrome was called, not start_firefox
+        mock_start_chrome.assert_called_once_with(headless=True)
+        mock_start_firefox.assert_not_called()
+        
+        # Reset mocks for testing default behavior
+        mock_start_chrome.reset_mock()
+        mock_start_firefox.reset_mock()
+        
+        # Test default behavior (should also use chrome)
+        result = authenticate_cvlac("Colombiana", "John Doe", "12345678", "password123", headless=True)
+        
+        # Should succeed
+        self.assertEqual(result["status"], "success")
+        self.assertTrue(result["session_active"])
+        
+        # Verify start_chrome was called by default, not start_firefox
+        mock_start_chrome.assert_called_once_with(headless=True)
+        mock_start_firefox.assert_not_called()
+
+    @patch('autofillcvlac.core.start_firefox')
+    @patch('autofillcvlac.core.start_chrome')
+    @patch('autofillcvlac.core.go_to')
+    @patch('autofillcvlac.core.select')
+    @patch('autofillcvlac.core.write')
+    @patch('autofillcvlac.core.click')
+    @patch('autofillcvlac.core.S')
+    @patch('autofillcvlac.core.TextField')
+    @patch('autofillcvlac.core.Button')
+    @patch('autofillcvlac.core.Text')
+    @patch('time.sleep')
+    def test_authenticate_cvlac_browser_headless_combinations(self, mock_sleep, mock_text, mock_button, mock_textfield, mock_S, mock_click, mock_write, mock_select, mock_go_to, mock_start_chrome, mock_start_firefox):
+        """Test browser parameter works with both headless=True and headless=False."""
+        # Configure mocks
+        mock_start_firefox.return_value = MagicMock()
+        mock_start_chrome.return_value = MagicMock()
+        mock_go_to.return_value = None
+        mock_write.return_value = None
+        mock_click.return_value = None
+        mock_S.return_value = MagicMock()
+        mock_textfield.return_value = MagicMock()
+        mock_button.return_value = MagicMock()
+        mock_select.return_value = None
+        mock_sleep.return_value = None
+        
+        # Mock Text.exists() to return False (no error messages found)
+        mock_text_instance = MagicMock()
+        mock_text_instance.exists.return_value = False
+        mock_text.return_value = mock_text_instance
+        
+        # Mock S().exists() to return False (no error elements found)
+        mock_S_instance = MagicMock()
+        mock_S_instance.exists.return_value = False
+        mock_S.return_value = mock_S_instance
+        
+        # Test Firefox with headless=False
+        result = authenticate_cvlac("Colombiana", "John Doe", "12345678", "password123", browser="firefox", headless=False)
+        
+        self.assertEqual(result["status"], "success")
+        mock_start_firefox.assert_called_once_with()  # Called without headless=True
+        
+        # Reset mocks
+        mock_start_firefox.reset_mock()
+        mock_start_chrome.reset_mock()
+        
+        # Test Chrome with headless=False
+        result = authenticate_cvlac("Colombiana", "John Doe", "12345678", "password123", browser="chrome", headless=False)
+        
+        self.assertEqual(result["status"], "success")
+        mock_start_chrome.assert_called_once_with()  # Called without headless=True
 
     def test_fill_scientific_article_function_exists(self):
         """Test that fill_scientific_article function exists and has correct signature."""
