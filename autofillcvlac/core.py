@@ -456,18 +456,6 @@ def fill_scientific_article(
         # Select month
         select_from_list('nro_mes_presenta', str(month))
         
-        # Fill journal name if provided (note: this is a readonly field that normally requires search)
-        # We'll just try to fill it directly, but user may need to use the search functionality
-        if journal_name:
-            try:
-                write(journal_name, into=S("#txt_nme_revista") or S("[name='txt_nme_revista']"))
-            except:
-                # If readonly field can't be filled, continue (user will need to use search)
-                pass
-        if journal_issn:
-            get_journal(journal_issn)
-
-        wait_until(Text('Buscar').exists)
         # Fill volume if provided
         if volume:
             write(str(volume), into=S("[name='txt_volumen_revista']"))
@@ -491,6 +479,19 @@ def fill_scientific_article(
         # Fill DOI if provided
         if doi:
             write(doi, into=S("#doi") or S("[name='txt_doi']"))
+
+        # Fill journal name if provided (note: this is a readonly field that normally requires search)
+        # We'll just try to fill it directly, but user may need to use the search functionality
+        if journal_name:
+            try:
+                write(journal_name, into=S("#txt_nme_revista") or S("[name='txt_nme_revista']"))
+            except:
+                # If readonly field can't be filled, continue (user will need to use search)
+                pass
+        if journal_issn:
+            get_journal(journal_issn)
+
+        wait_until(Text('Buscar').exists)
         
         return {
             "status": "success",
