@@ -5,7 +5,7 @@ Basic tests for autofillcvlac package.
 import unittest
 from unittest.mock import patch, MagicMock
 from autofillcvlac import flatten
-from autofillcvlac.core import filter_products_by_year, authenticate_cvlac, fill_scientific_article
+from autofillcvlac.core import filter_products_by_year, authenticate_cvlac, fill_scientific_article, filter_missing_journal_articles
 
 
 class TestAutofillcvlac(unittest.TestCase):
@@ -537,6 +537,250 @@ class TestAutofillcvlac(unittest.TestCase):
         self.assertEqual(result["status"], "error")
         self.assertTrue(result["session_active"])
         self.assertIn("Failed to fill scientific article form", result["message"])
+
+    def test_filter_missing_journal_articles_function_exists(self):
+        """Test that filter_missing_journal_articles function exists."""
+        self.assertTrue(callable(filter_missing_journal_articles))
+    
+    def test_filter_missing_journal_articles_basic_filtering(self):
+        """Test basic filtering criteria for journal articles missing in CvLAC."""
+        products = [
+            # Product 1: Valid journal article (should be included)
+            {
+                "external_ids": [
+                    {"provenance": "openalex", "source": "openalex"},
+                    {"provenance": "scholar", "source": "scholar"}
+                ],
+                "types": [
+                    {"source": "impactu", "type": "Artículo de revista"},
+                    {"source": "openalex", "type": "article"}
+                ],
+                "year_published": 2023,
+                "source": {
+                    "external_ids": {"issn": "1234-5678", "openalex": "S123456"}
+                }
+            },
+            # Product 2: Has scienti provenance AND source (should be excluded)
+            {
+                "external_ids": [
+                    {"provenance": "scienti", "source": "scienti"},
+                    {"provenance": "openalex", "source": "openalex"}
+                ],
+                "types": [
+                    {"source": "impactu", "type": "Artículo de revista"}
+                ],
+                "year_published": 2023,
+                "source": {
+                    "external_ids": {"issn": "1234-5678"}
+                }
+            },
+            # Product 3: Not a journal article (should be excluded)
+            {
+                "external_ids": [
+                    {"provenance": "openalex", "source": "openalex"}
+                ],
+                "types": [
+                    {"source": "impactu", "type": "Libro"}
+                ],
+                "year_published": 2023,
+                "source": {
+                    "external_ids": {"issn": "1234-5678"}
+                }
+            },
+            # Product 4: Too old (should be excluded)
+            {
+                "external_ids": [
+                    {"provenance": "openalex", "source": "openalex"}
+                ],
+                "types": [
+                    {"source": "impactu", "type": "Artículo de revista"}
+                ],
+                "year_published": 2015,
+                "source": {
+                    "external_ids": {"issn": "1234-5678"}
+                }
+            },
+            # Product 5: No ISSN/EISSN (should be excluded)
+            {
+                "external_ids": [
+                    {"provenance": "openalex", "source": "openalex"}
+                ],
+                "types": [
+                    {"source": "impactu", "type": "Artículo de revista"}
+                ],
+                "year_published": 2023,
+                "source": {
+                    "external_ids": {"openalex": "S123456"}
+                }
+            }
+        ]
+        
+        result = filter_missing_journal_articles(products, current_year=2025)
+        
+        # Only the first product should pass all criteria
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["year_published"], 2023)
+        
+    def test_filter_missing_journal_articles_scienti_filtering(self):
+        """Test filtering of products with scienti provenance AND source."""
+        products = [
+            # Should be included: has scienti provenance but different source
+            {
+                "external_ids": [
+                    {"provenance": "scienti", "source": "minciencias"}
+                ],
+                "types": [{"source": "impactu", "type": "Artículo de revista"}],
+                "year_published": 2023,
+                "source": {"external_ids": {"issn": "1234-5678"}}
+            },
+            # Should be included: has scienti source but different provenance
+            {
+                "external_ids": [
+                    {"provenance": "minciencias", "source": "scienti"}
+                ],
+                "types": [{"source": "impactu", "type": "Artículo de revista"}],
+                "year_published": 2023,
+                "source": {"external_ids": {"issn": "1234-5678"}}
+            },
+            # Should be excluded: has both scienti provenance AND source
+            {
+                "external_ids": [
+                    {"provenance": "scienti", "source": "scienti"}
+                ],
+                "types": [{"source": "impactu", "type": "Artículo de revista"}],
+                "year_published": 2023,
+                "source": {"external_ids": {"issn": "1234-5678"}}
+            }
+        ]
+        
+        result = filter_missing_journal_articles(products, current_year=2025)
+        
+        # Should include 2 products (first two), exclude the third
+        self.assertEqual(len(result), 2)
+        
+    def test_filter_missing_journal_articles_eissn_support(self):
+        """Test that EISSN is treated as equivalent to ISSN."""
+        products = [
+            # Product with ISSN
+            {
+                "external_ids": [{"provenance": "openalex", "source": "openalex"}],
+                "types": [{"source": "impactu", "type": "Artículo de revista"}],
+                "year_published": 2023,
+                "source": {"external_ids": {"issn": "1234-5678"}}
+            },
+            # Product with EISSN
+            {
+                "external_ids": [{"provenance": "openalex", "source": "openalex"}],
+                "types": [{"source": "impactu", "type": "Artículo de revista"}],
+                "year_published": 2023,
+                "source": {"external_ids": {"eissn": "5678-1234"}}
+            },
+            # Product with both ISSN and EISSN
+            {
+                "external_ids": [{"provenance": "openalex", "source": "openalex"}],
+                "types": [{"source": "impactu", "type": "Artículo de revista"}],
+                "year_published": 2023,
+                "source": {"external_ids": {"issn": "1234-5678", "eissn": "5678-1234"}}
+            }
+        ]
+        
+        result = filter_missing_journal_articles(products, current_year=2025)
+        
+        # All three should be included (ISSN and EISSN are equivalent)
+        self.assertEqual(len(result), 3)
+        
+    def test_filter_missing_journal_articles_year_calculation(self):
+        """Test year filtering calculation for last 5 years."""
+        products = [
+            {"external_ids": [{"provenance": "openalex", "source": "openalex"}],
+             "types": [{"source": "impactu", "type": "Artículo de revista"}],
+             "year_published": 2025, "source": {"external_ids": {"issn": "1234-5678"}}},
+            {"external_ids": [{"provenance": "openalex", "source": "openalex"}],
+             "types": [{"source": "impactu", "type": "Artículo de revista"}],
+             "year_published": 2024, "source": {"external_ids": {"issn": "1234-5678"}}},
+            {"external_ids": [{"provenance": "openalex", "source": "openalex"}],
+             "types": [{"source": "impactu", "type": "Artículo de revista"}],
+             "year_published": 2021, "source": {"external_ids": {"issn": "1234-5678"}}},  # 5th year back
+            {"external_ids": [{"provenance": "openalex", "source": "openalex"}],
+             "types": [{"source": "impactu", "type": "Artículo de revista"}],
+             "year_published": 2020, "source": {"external_ids": {"issn": "1234-5678"}}},  # 6th year back (should be excluded)
+        ]
+        
+        result = filter_missing_journal_articles(products, current_year=2025)
+        
+        # Should include 2025, 2024, 2021 but not 2020 (2025-4=2021 is the cutoff)
+        self.assertEqual(len(result), 3)
+        years = [p["year_published"] for p in result]
+        self.assertIn(2025, years)
+        self.assertIn(2024, years)
+        self.assertIn(2021, years)
+        self.assertNotIn(2020, years)
+        
+    def test_filter_missing_journal_articles_missing_fields(self):
+        """Test handling of products with missing or empty fields."""
+        products = [
+            # Missing external_ids - should be INCLUDED (no scienti entries to exclude)
+            {
+                "types": [{"source": "impactu", "type": "Artículo de revista"}],
+                "year_published": 2023,
+                "source": {"external_ids": {"issn": "1234-5678"}}
+            },
+            # Missing types - should be EXCLUDED
+            {
+                "external_ids": [{"provenance": "openalex", "source": "openalex"}],
+                "year_published": 2023,
+                "source": {"external_ids": {"issn": "1234-5678"}}
+            },
+            # Missing year_published - should be EXCLUDED
+            {
+                "external_ids": [{"provenance": "openalex", "source": "openalex"}],
+                "types": [{"source": "impactu", "type": "Artículo de revista"}],
+                "source": {"external_ids": {"issn": "1234-5678"}}
+            },
+            # Missing source - should be EXCLUDED
+            {
+                "external_ids": [{"provenance": "openalex", "source": "openalex"}],
+                "types": [{"source": "impactu", "type": "Artículo de revista"}],
+                "year_published": 2023
+            },
+            # Complete valid product - should be INCLUDED
+            {
+                "external_ids": [{"provenance": "openalex", "source": "openalex"}],
+                "types": [{"source": "impactu", "type": "Artículo de revista"}],
+                "year_published": 2023,
+                "source": {"external_ids": {"issn": "1234-5678"}}
+            }
+        ]
+        
+        result = filter_missing_journal_articles(products, current_year=2025)
+        
+        # Should include 2 products: the one with missing external_ids and the complete one
+        self.assertEqual(len(result), 2)
+        
+        # Verify the included products have required year and ISSN
+        for product in result:
+            self.assertEqual(product["year_published"], 2023)
+            self.assertIn("issn", product["source"]["external_ids"])
+        
+    def test_filter_missing_journal_articles_empty_input(self):
+        """Test filtering with empty product list."""
+        result = filter_missing_journal_articles([], current_year=2025)
+        self.assertEqual(result, [])
+        
+    def test_filter_missing_journal_articles_default_current_year(self):
+        """Test that function works with default current year."""
+        products = [
+            {
+                "external_ids": [{"provenance": "openalex", "source": "openalex"}],
+                "types": [{"source": "impactu", "type": "Artículo de revista"}],
+                "year_published": 2023,
+                "source": {"external_ids": {"issn": "1234-5678"}}
+            }
+        ]
+        
+        # Should work without specifying current_year
+        result = filter_missing_journal_articles(products)
+        self.assertIsInstance(result, list)
 
 
 if __name__ == '__main__':
