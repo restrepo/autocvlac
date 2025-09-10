@@ -355,7 +355,7 @@ def fill_scientific_article(
     volume=None,
     issue=None,
     series=None,
-    publication_medium="H",  # Default to "Electrónico"
+    publication_medium="Electrónico",  # Default to "Electrónico"
     website_url=None,
     doi=None
 ):
@@ -375,7 +375,7 @@ def fill_scientific_article(
         volume (str, optional): Journal volume
         issue (str, optional): Journal issue/fascicle
         series (str, optional): Journal series
-        publication_medium (str): Publication medium - "I" (Papel) or "H" (Electrónico). Default: "H"
+        publication_medium (str): Publication medium - "Papel" or "Electrónico". Default: "Electrónico"
         website_url (str, optional): Website URL
         doi (str, optional): DOI (Digital Object Identifier)
         
@@ -400,11 +400,11 @@ def fill_scientific_article(
         }
     
     # Validate publication_medium
-    valid_mediums = ["I", "H"]
+    valid_mediums = ["Papel", "Electrónico"]
     if publication_medium not in valid_mediums:
         return {
             "status": "error",
-            "message": f"publication_medium must be one of {valid_mediums} (I=Papel, H=Electrónico)",
+            "message": f"publication_medium must be one of {valid_mediums}",
             "session_active": True
         }
     
@@ -482,9 +482,7 @@ def fill_scientific_article(
         
         # Select publication medium
         if publication_medium:
-            # Map codes to text values
-            medium_text = "Papel" if publication_medium == "I" else "Electrónico"
-            select_from_list('tpo_medio_divulgacion', medium_text)
+            select_from_list('tpo_medio_divulgacion', publication_medium)
         
         # Fill website URL if provided
         if website_url:

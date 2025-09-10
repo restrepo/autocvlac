@@ -442,6 +442,15 @@ class TestAutofillcvlac(unittest.TestCase):
         self.assertIn("publication_medium must be one of", result["message"])
         self.assertTrue(result["session_active"])
         
+        # Test valid publication mediums
+        result = fill_scientific_article("Test Title", publication_medium="Papel")
+        # Should not fail on publication_medium validation (will fail later on browser requirement)
+        self.assertNotIn("publication_medium must be one of", result.get("message", ""))
+        
+        result = fill_scientific_article("Test Title", publication_medium="Electrónico")
+        # Should not fail on publication_medium validation (will fail later on browser requirement)
+        self.assertNotIn("publication_medium must be one of", result.get("message", ""))
+        
         # Test invalid month
         result = fill_scientific_article("Test Title", month="InvalidMonth")
         self.assertEqual(result["status"], "error")
