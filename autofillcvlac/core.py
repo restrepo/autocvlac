@@ -207,17 +207,14 @@ def extract_scientific_article_data(product):
     # Extract DOI directly from the doi key
     doi = product.get("doi")
     
-    # Extract website URL (prefer open access URLs)
+    # Extract website URL (prefer DOI, then first available URL from external_urls)
     website_url = None
-    external_urls = product.get("external_urls", [])
-    for url_entry in external_urls:
-        if url_entry.get("source") in ["open_access", "pdf"]:
-            website_url = url_entry.get("url")
-            break
-    
-    # If no open access URL found, use the first available URL
-    if not website_url and external_urls:
-        website_url = external_urls[0].get("url")
+    if doi:
+        website_url = doi
+    else:
+        external_urls = product.get("external_urls", [])
+        if external_urls:
+            website_url = external_urls[0].get("url")
     
     return {
         "title": title,

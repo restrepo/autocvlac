@@ -834,7 +834,7 @@ class TestAutofillcvlac(unittest.TestCase):
         self.assertEqual(result['initial_page'], '1')
         self.assertEqual(result['final_page'], '9')
         self.assertEqual(result['doi'], 'https://doi.org/10.1140/epjc/s10052-012-1941-1')  # Full DOI URL
-        self.assertEqual(result['website_url'], 'http://arxiv.org/pdf/1108.0722')
+        self.assertEqual(result['website_url'], 'https://doi.org/10.1140/epjc/s10052-012-1941-1')  # Website URL uses DOI when available
         self.assertEqual(result['article_type'], '111')  # Default
         self.assertEqual(result['publication_medium'], 'Electrónico')  # Default
 
@@ -902,6 +902,25 @@ class TestAutofillcvlac(unittest.TestCase):
     def test_extract_scientific_article_data_function_exists(self):
         """Test that extract_scientific_article_data function exists."""
         self.assertTrue(callable(extract_scientific_article_data))
+
+    def test_extract_scientific_article_data_website_url_fallback(self):
+        """Test that website_url falls back to external_urls when DOI is not available."""
+        product = {
+            'titles': [{'title': 'Article without DOI', 'lang': 'en'}],
+            'types': [{'source': 'impactu', 'type': 'Artículo de revista'}],
+            'year_published': 2023,
+            'external_urls': [
+                {'source': 'publisher', 'url': 'https://example.com/article'},
+                {'source': 'other', 'url': 'https://other.com/article'}
+            ]
+            # Note: no 'doi' key
+        }
+        
+        result = extract_scientific_article_data(product)
+        
+        self.assertIsNotNone(result)
+        self.assertIsNone(result['doi'])  # No DOI available
+        self.assertEqual(result['website_url'], 'https://example.com/article')  # First external URL
 
 
 if __name__ == '__main__':
