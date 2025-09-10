@@ -747,8 +747,7 @@ def fill_scientific_article(
         go_to(article_url)
         
         # Wait for page to load
-        import time
-        time.sleep(2)
+        wait_until(Text('Buscar').exists)
         
         # Fill article type (radio button)
         if article_type == "111":
@@ -814,8 +813,6 @@ def fill_scientific_article(
                 pass
         if journal_issn:
             get_journal(journal_issn)
-
-        wait_until(Text('Buscar').exists)
         
         return {
             "status": "success",
