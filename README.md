@@ -13,6 +13,7 @@ pip install autofillcvlac
 ```python
 from autofillcvlac import flatten, authenticate_cvlac, fill_scientific_article, extract_scientific_article_data
 from autofillcvlac.core import get_research_products, filter_products_by_year, create_products_dataframe, filter_missing_journal_articles
+import getpass
 
 # Flatten a list of lists
 nested_list = [[1, 2], [3, 4], [5]]
@@ -32,11 +33,17 @@ if response.status_code == 200:
         extracted_data = extract_scientific_article_data(product)
         if extracted_data:
             print(f"Ready to fill: {extracted_data['title']}")
-            # Use extracted data directly with fill_scientific_article
-            # result = fill_scientific_article(**extracted_data)
+            # After authentication, use extracted data directly:
+            # fill_scientific_article(**extracted_data)
+
+# Secure credential input
+documento_identificacion = getpass.getpass('documento_identificacion: ')
+password = getpass.getpass('password: ')
 
 # Authenticate with CVLaC system
-auth_result = authenticate_cvlac('Colombian', 'John Doe', '12345678', 'your_password')
+auth_result = authenticate_cvlac(nacionalidad='Colombiana', nombres='John Doe', 
+                                documento_identificacion=documento_identificacion, 
+                                password=password, headless=False)
 if auth_result['status'] == 'success':
     print("Authentication successful!")
     
@@ -64,7 +71,8 @@ else:
     print(f"Authentication failed: {auth_result['message']}")
 
 # Authenticate with CVLaC system for foreign nationality
-auth_result = authenticate_cvlac('Extranjero - otra', 'John Doe', 'dummy', 'your_password', 
+auth_result = authenticate_cvlac(nacionalidad='Extranjero - otra', nombres='John Doe', 
+                                documento_identificacion='dummy', password='your_password', 
                                 pais_nacimiento='Estados Unidos', fecha_nacimiento='1990-05-15')
 if auth_result['status'] == 'success':
     print("Authentication successful!")
