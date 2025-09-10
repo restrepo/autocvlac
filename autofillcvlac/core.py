@@ -83,7 +83,7 @@ def filter_missing_journal_articles(products, current_year=None):
     
     Args:
         products: List of product dictionaries from get_research_products
-        current_year: Current year for calculating last 5 years (default: uses datetime.now().year)
+        current_year: Current year for calculating last 6 years (default: uses datetime.now().year)
         
     Returns:
         Filtered list of journal article products meeting all criteria
@@ -91,7 +91,7 @@ def filter_missing_journal_articles(products, current_year=None):
     if current_year is None:
         current_year = datetime.now().year
     
-    start_year = current_year - 4  # Last 5 years: current + 4 previous years
+    start_year = current_year - 5  # Last 6 years: current + 5 previous years
     filtered = []
     
     for product in products:
