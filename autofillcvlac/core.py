@@ -6,7 +6,7 @@ import requests
 import pandas as pd
 from datetime import datetime
 from selenium.webdriver.common.by import By
-from helium import start_chrome, go_to, write, click, kill_browser, Text, TextField, Button, S, select, wait_until, get_driver
+from helium import start_chrome, start_firefox, go_to, write, click, kill_browser, Text, TextField, Button, S, select, wait_until, get_driver
 
 
 def flatten(xss):
@@ -462,7 +462,7 @@ def fill_date_of_birth(fecha_nacimiento):
             }
 
 
-def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password, pais_nacimiento=None, fecha_nacimiento=None, headless=True):
+def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password, pais_nacimiento=None, fecha_nacimiento=None, headless=False, browser="chrome"):
     """
     Authenticate with the CVLaC (Curriculum Vitae de Latinoamérica y el Caribe) system.
     
@@ -473,7 +473,8 @@ def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password
         password (str): The password for CVLaC login
         pais_nacimiento (str, optional): Country of birth (required when nacionalidad is "Extranjero - otra" or "E")
         fecha_nacimiento (str, optional): Date of birth in format YYYY-MM-DD (required when nacionalidad is "Extranjero - otra" or "E")
-        headless (bool): Whether to run browser in headless mode (default: True)
+        headless (bool): Whether to run browser in headless mode (default: False)
+        browser (str): Browser to use - "chrome" or "firefox" (default: "chrome")
         
     Returns:
         dict: Authentication result with status and session information
@@ -486,6 +487,15 @@ def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password
         return {
             "status": "error",
             "message": "Required fields (nacionalidad, nombres, password) are missing",
+            "session_active": False
+        }
+    
+    # Validate browser parameter
+    valid_browsers = ["chrome", "firefox"]
+    if browser not in valid_browsers:
+        return {
+            "status": "error",
+            "message": f"browser must be one of {valid_browsers}",
             "session_active": False
         }
     
@@ -516,10 +526,16 @@ def authenticate_cvlac(nacionalidad, nombres, documento_identificacion, password
     
     try:
         # Start browser
-        if headless:
-            browser = start_chrome(headless=True)
-        else:
-            browser = start_chrome()
+        if browser == "firefox":
+            if headless:
+                browser_instance = start_firefox(headless=True)
+            else:
+                browser_instance = start_firefox()
+        else:  # Default to Chrome
+            if headless:
+                browser_instance = start_chrome(headless=True)
+            else:
+                browser_instance = start_chrome()
         
         # Navigate to login page
         go_to(login_url)
