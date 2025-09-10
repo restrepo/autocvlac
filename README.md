@@ -10,26 +10,15 @@ pip install autofillcvlac
 
 ## Usage
 
-### Basic Data Processing
+### Accessing Research Data from Impactu API
 
-Start by importing the necessary modules and performing basic data operations:
+The `cod_rh` is the unique identifier for Colombian researchers registered in the Scienti platform of MINCIENCIAS. The Impactu API (https://impactu.colav.co/) provides access to research products that may be missing from researchers' CvLAC profiles.
 
 ```python
 from autofillcvlac import flatten, authenticate_cvlac, fill_scientific_article, extract_scientific_article_data
 from autofillcvlac.core import get_research_products, filter_products_by_year, create_products_dataframe, filter_missing_journal_articles
 import getpass
 
-# Flatten a list of lists
-nested_list = [[1, 2], [3, 4], [5]]
-flat_list = flatten(nested_list)
-print(flat_list)  # [1, 2, 3, 4, 5]
-```
-
-### Accessing Research Data from Impactu API
-
-The `cod_rh` is the unique identifier for Colombian researchers registered in the Scienti platform of MINCIENCIAS. The Impactu API (https://impactu.colav.co/) provides access to research products that may be missing from researchers' CvLAC profiles.
-
-```python
 cod_rh = '0000177733'  # Example: Colombian researcher ID
 products = get_research_products(cod_rh)
 ```
@@ -140,7 +129,7 @@ else:
 Perform additional data processing and analysis:
 
 ```python
-response = get_research_products('67dc9885444bab3c3f1a7df2')
+response = get_research_products(cod_rh)
 if response.status_code == 200:
     products = response.json().get('data', [])
     
