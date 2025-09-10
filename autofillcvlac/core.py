@@ -134,6 +134,122 @@ def filter_missing_journal_articles(products, current_year=None):
     return filtered
 
 
+def extract_scientific_article_data(product):
+    """
+    Extract data from a research product dictionary to parameters for fill_scientific_article.
+    
+    This function extracts relevant fields from a research product dictionary (like the one 
+    from issue #39) and maps them to the parameters required by the fill_scientific_article function.
+    Only processes dictionaries where types contains an entry with source='impactu' and 
+    type='Artículo de revista'.
+    
+    Args:
+        product (dict): Research product dictionary from get_research_products
+        
+    Returns:
+        dict: Dictionary with keys matching fill_scientific_article parameters, or None if 
+              the product is not a journal article from impactu source
+    """
+    # Check if this is a journal article from impactu source
+    types = product.get("types", [])
+    is_journal_article = any(
+        type_entry.get('source') == 'impactu' and type_entry.get('type') == 'Artículo de revista'
+        for type_entry in types
+    )
+    
+    if not is_journal_article:
+        return None
+    
+    # Extract title (prefer English, fallback to first available)
+    titles = product.get("titles", [])
+    title = None
+    if titles:
+        # Try to find English title first
+        for title_entry in titles:
+            if title_entry.get("lang") == "en":
+                title = title_entry.get("title")
+                break
+        # If no English title found, use the first one
+        if not title and titles:
+            title = titles[0].get("title")
+    
+    # Extract year
+    year = product.get("year_published")
+    
+    # Extract month from date_published if available
+    month = None
+    date_published = product.get("date_published")
+    if date_published:
+        # Convert timestamp to month name in Spanish
+        from datetime import datetime
+        try:
+            dt = datetime.fromtimestamp(date_published)
+            month_names = {
+                1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
+                5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto", 
+                9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
+            }
+            month = month_names.get(dt.month)
+        except (ValueError, OSError):
+            pass
+    
+    # Extract journal information
+    source = product.get("source", {})
+    journal_name = source.get("name")
+    
+    # Extract ISSN (prefer issn over eissn)
+    source_external_ids = source.get("external_ids", {})
+    journal_issn = source_external_ids.get("issn") or source_external_ids.get("eissn")
+    
+    # Extract bibliographic information
+    bibliographic_info = product.get("bibliographic_info", {})
+    volume = bibliographic_info.get("volume")
+    issue = bibliographic_info.get("issue")
+    initial_page = bibliographic_info.get("start_page")
+    final_page = bibliographic_info.get("end_page")
+    
+    # Extract DOI from external_ids
+    doi = None
+    external_ids = product.get("external_ids", [])
+    for ext_id in external_ids:
+        if ext_id.get("source") == "doi":
+            doi = ext_id.get("id")
+            # Remove https:// prefix if present for cleaner DOI
+            if doi and doi.startswith("https://doi.org/"):
+                doi = doi.replace("https://doi.org/", "")
+            break
+    
+    # Extract website URL (prefer open access URLs)
+    website_url = None
+    external_urls = product.get("external_urls", [])
+    for url_entry in external_urls:
+        if url_entry.get("source") in ["open_access", "pdf"]:
+            website_url = url_entry.get("url")
+            break
+    
+    # If no open access URL found, use the first available URL
+    if not website_url and external_urls:
+        website_url = external_urls[0].get("url")
+    
+    return {
+        "title": title,
+        "article_type": "111",  # Default to "Completo"
+        "initial_page": initial_page,
+        "final_page": final_page,
+        "language": "ES",  # Default to Spanish
+        "year": year,
+        "month": month,
+        "journal_name": journal_name,
+        "journal_issn": journal_issn,
+        "volume": volume,
+        "issue": issue,
+        "series": None,  # Not available in the dictionary structure
+        "publication_medium": "Electrónico",  # Default
+        "website_url": website_url,
+        "doi": doi
+    }
+
+
 def create_products_dataframe(products):
     """
     Create a pandas DataFrame from research products.

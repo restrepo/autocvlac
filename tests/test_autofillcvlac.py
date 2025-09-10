@@ -5,7 +5,7 @@ Basic tests for autofillcvlac package.
 import unittest
 from unittest.mock import patch, MagicMock
 from autofillcvlac import flatten
-from autofillcvlac.core import filter_products_by_year, authenticate_cvlac, fill_scientific_article, filter_missing_journal_articles
+from autofillcvlac.core import filter_products_by_year, authenticate_cvlac, fill_scientific_article, filter_missing_journal_articles, extract_scientific_article_data
 
 
 class TestAutofillcvlac(unittest.TestCase):
@@ -781,6 +781,125 @@ class TestAutofillcvlac(unittest.TestCase):
         # Should work without specifying current_year
         result = filter_missing_journal_articles(products)
         self.assertIsInstance(result, list)
+
+    def test_extract_scientific_article_data_valid_journal_article(self):
+        """Test extraction of data from a valid journal article dictionary."""
+        # Sample product dictionary like the one from issue #39
+        product = {
+            'titles': [
+                {'lang': 'en', 'source': 'openalex', 'title': 'Neutrino masses in SU(5)×U(1) F with adjoint flavons'},
+                {'lang': 'es', 'source': 'scienti', 'title': 'Masas de neutrinos en SU(5)×U(1) F con flavones adjuntos'}
+            ],
+            'types': [
+                {'provenance': 'openalex', 'source': 'openalex', 'type': 'article'},
+                {'provenance': 'minciencias', 'source': 'impactu', 'type': 'Artículo de revista'}
+            ],
+            'year_published': 2012,
+            'date_published': 1330578000,  # March 1, 2012
+            'source': {
+                'name': 'The European Physical Journal C',
+                'external_ids': {
+                    'issn': '1434-6044',
+                    'eissn': '1434-6052'
+                }
+            },
+            'bibliographic_info': {
+                'volume': '72',
+                'issue': '3',
+                'start_page': '1',
+                'end_page': '9'
+            },
+            'external_ids': [
+                {'id': 'https://doi.org/10.1140/epjc/s10052-012-1941-1', 'source': 'doi'},
+                {'id': 'https://openalex.org/W1571169636', 'source': 'openalex'}
+            ],
+            'external_urls': [
+                {'source': 'open_access', 'url': 'http://arxiv.org/pdf/1108.0722'}
+            ]
+        }
+        
+        result = extract_scientific_article_data(product)
+        
+        # Verify the extraction was successful
+        self.assertIsNotNone(result)
+        self.assertEqual(result['title'], 'Neutrino masses in SU(5)×U(1) F with adjoint flavons')
+        self.assertEqual(result['year'], 2012)
+        self.assertEqual(result['month'], 'Marzo')  # March in Spanish
+        self.assertEqual(result['journal_name'], 'The European Physical Journal C')
+        self.assertEqual(result['journal_issn'], '1434-6044')  # Prefers issn over eissn
+        self.assertEqual(result['volume'], '72')
+        self.assertEqual(result['issue'], '3')
+        self.assertEqual(result['initial_page'], '1')
+        self.assertEqual(result['final_page'], '9')
+        self.assertEqual(result['doi'], '10.1140/epjc/s10052-012-1941-1')  # DOI without https:// prefix
+        self.assertEqual(result['website_url'], 'http://arxiv.org/pdf/1108.0722')
+        self.assertEqual(result['article_type'], '111')  # Default
+        self.assertEqual(result['language'], 'ES')  # Default
+        self.assertEqual(result['publication_medium'], 'Electrónico')  # Default
+
+    def test_extract_scientific_article_data_not_journal_article(self):
+        """Test that function returns None for non-journal articles."""
+        product = {
+            'titles': [{'title': 'Some other work'}],
+            'types': [
+                {'source': 'openalex', 'type': 'article'},
+                {'source': 'impactu', 'type': 'Book chapter'}  # Not a journal article
+            ]
+        }
+        
+        result = extract_scientific_article_data(product)
+        self.assertIsNone(result)
+
+    def test_extract_scientific_article_data_missing_impactu_source(self):
+        """Test that function returns None when no impactu source is present."""
+        product = {
+            'titles': [{'title': 'Some article'}],
+            'types': [
+                {'source': 'openalex', 'type': 'article'},
+                {'source': 'scienti', 'type': 'Artículo de revista'}  # Not impactu source
+            ]
+        }
+        
+        result = extract_scientific_article_data(product)
+        self.assertIsNone(result)
+
+    def test_extract_scientific_article_data_minimal_fields(self):
+        """Test extraction with minimal required fields."""
+        product = {
+            'titles': [{'title': 'Minimal Article'}],
+            'types': [{'source': 'impactu', 'type': 'Artículo de revista'}],
+            'year_published': 2023
+        }
+        
+        result = extract_scientific_article_data(product)
+        
+        self.assertIsNotNone(result)
+        self.assertEqual(result['title'], 'Minimal Article')
+        self.assertEqual(result['year'], 2023)
+        self.assertIsNone(result['month'])
+        self.assertIsNone(result['journal_name'])
+        self.assertIsNone(result['journal_issn'])
+
+    def test_extract_scientific_article_data_eissn_fallback(self):
+        """Test that eissn is used when issn is not available."""
+        product = {
+            'titles': [{'title': 'EISSN Article'}],
+            'types': [{'source': 'impactu', 'type': 'Artículo de revista'}],
+            'source': {
+                'external_ids': {
+                    'eissn': '2345-6789'  # Only eissn available
+                }
+            }
+        }
+        
+        result = extract_scientific_article_data(product)
+        
+        self.assertIsNotNone(result)
+        self.assertEqual(result['journal_issn'], '2345-6789')
+
+    def test_extract_scientific_article_data_function_exists(self):
+        """Test that extract_scientific_article_data function exists."""
+        self.assertTrue(callable(extract_scientific_article_data))
 
 
 if __name__ == '__main__':
